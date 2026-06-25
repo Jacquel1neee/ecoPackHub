@@ -184,18 +184,32 @@
             </a>
         </div>
         <div class="nav flex-column">
+            <!-- Dashboard -->
             <a href="{{ route('admin.dashboard') }}" class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
                 <i class="fas fa-chart-pie"></i> <span>Dashboard</span>
             </a>
+            
+            <!-- Products -->
             <a href="{{ route('admin.products.index') }}" class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}">
                 <i class="fas fa-box"></i> <span>Products</span>
             </a>
+            
+            <!-- Categories -->
             <a href="{{ route('admin.categories.index') }}" class="nav-link {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}">
                 <i class="fas fa-th-large"></i> <span>Categories</span>
             </a>
+            
+            <!-- ===== NEW: Users Menu ===== -->
+            <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+                <i class="fas fa-users"></i> <span>Users</span>
+            </a>
+            
+            <!-- View Site -->
             <a href="{{ route('home') }}" class="nav-link" target="_blank">
                 <i class="fas fa-globe"></i> <span>View Site</span>
             </a>
+            
+            <!-- Logout -->
             <form method="POST" action="{{ route('logout') }}" style="margin-top:20px;">
                 @csrf
                 <button type="submit" class="nav-link" style="background:none;border:none;width:100%;text-align:left;color:rgba(255,255,255,0.8);">

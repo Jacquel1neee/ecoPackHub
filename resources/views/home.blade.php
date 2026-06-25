@@ -24,15 +24,15 @@
                         <i class="fas fa-th-large me-2"></i>All Categories
                     </div>
                     <div class="list-group list-group-flush">
-                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center border-0 py-2 px-3 {{ request()->get('category') == '' ? 'active' : '' }}" style="background-color: {{ request()->get('category') == '' ? '#e8f5e9' : 'transparent' }};">
+                        <a href="{{ route('home') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center border-0 py-2 px-3 {{ !request()->has('category') ? 'active' : '' }}" @if(!request()->has('category')) style="background-color: #e8f5e9;" @endif>
                             <span>
                                 <i class="fas fa-box me-2" style="color: var(--primary-green); width: 20px;"></i>
                                 All Products
                             </span>
-                            <span class="badge bg-secondary rounded-pill">{{ $products->count() }}</span>
+                            <span class="badge bg-secondary rounded-pill">{{ $totalProductsCount }}</span>
                         </a>
                         @forelse($categories as $category)
-                            <a href="{{ route('home', ['category' => $category->slug]) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center border-0 py-2 px-3 {{ request()->get('category') == $category->slug ? 'active' : '' }}" style="background-color: {{ request()->get('category') == $category->slug ? '#e8f5e9' : 'transparent' }};">
+                            <a href="{{ route('home', ['category' => $category->slug]) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center border-0 py-2 px-3 {{ request()->get('category') == $category->slug ? 'active' : '' }}" @if(request()->get('category') == $category->slug) style="background-color: #e8f5e9;" @endif>
                                 <span>
                                     <i class="{{ $category->icon ?? 'fa-solid fa-box' }} me-2" style="color: var(--primary-green); width: 20px;"></i>
                                     {{ $category->name }}
@@ -54,7 +54,7 @@
                     </div>
                     <div class="card-body">
                         @php
-                            $materials = $products->pluck('material')->unique()->filter()->values();
+                            $materials = $allProducts->pluck('material')->unique()->filter()->values();
                         @endphp
                         @forelse($materials as $material)
                             <div class="form-check mb-2">
@@ -78,7 +78,7 @@
                     </div>
                     <div class="card-body">
                         @php
-                            $sizes = $products->pluck('size')->unique()->filter()->values();
+                            $sizes = $allProducts->pluck('size')->unique()->filter()->values();
                         @endphp
                         @forelse($sizes as $size)
                             <div class="form-check mb-2">

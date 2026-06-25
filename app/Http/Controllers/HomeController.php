@@ -13,7 +13,8 @@ class HomeController extends Controller
         // Get all categories with product count
         $categories = Category::withCount('products')->get();
         
-        // Start product query
+        $allProducts = Product::all();
+        
         $query = Product::with('category');
 
         // Filter by category
@@ -47,6 +48,13 @@ class HomeController extends Controller
         // Get filtered products
         $products = $query->get();
 
-        return view('home', compact('categories', 'products'));
+        $totalProductsCount = Product::count();
+
+        return view('home', compact(
+            'categories', 
+            'products', 
+            'allProducts', 
+            'totalProductsCount'
+        ));
     }
 }
