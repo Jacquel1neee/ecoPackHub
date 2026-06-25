@@ -15,24 +15,24 @@
             --primary-green: #2e7d32;
             --light-green: #4caf50;
             --cream: #f5f0e8;
-            --dark: #1a1a1a;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #ffffff;
-            color: var(--dark);
+            background-color: #f8f9fa;
         }
 
         /* Navbar */
         .navbar-custom {
             background-color: var(--primary-green);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         .navbar-custom .navbar-brand {
             color: #fff;
             font-weight: 700;
             font-size: 1.5rem;
+        }
+        .navbar-custom .navbar-brand:hover {
+            color: #fff;
         }
         .navbar-custom .nav-link {
             color: rgba(255,255,255,0.85);
@@ -53,11 +53,12 @@
         .hero {
             background: linear-gradient(135deg, var(--primary-green), var(--light-green));
             color: #fff;
-            padding: 80px 0;
+            padding: 60px 0;
             margin-bottom: 40px;
+            border-radius: 0 0 30px 30px;
         }
         .hero h1 {
-            font-size: 3rem;
+            font-size: 2.8rem;
             font-weight: 700;
         }
         .hero .btn-primary-custom {
@@ -72,83 +73,21 @@
             background-color: #f0f0f0;
         }
 
-        /* Category Cards */
-        .category-card {
-            background-color: var(--cream);
-            border-radius: 12px;
-            padding: 25px 15px;
-            text-align: center;
-            transition: transform 0.3s;
-            height: 100%;
-            text-decoration: none;
-            color: var(--dark);
-            display: block;
-        }
-        .category-card:hover {
-            transform: translateY(-5px);
-            text-decoration: none;
-            color: var(--dark);
-        }
-        .category-card i {
-            font-size: 2.5rem;
-            color: var(--primary-green);
-            margin-bottom: 10px;
-        }
-        .category-card h5 {
-            font-weight: 600;
-            margin-bottom: 0;
-        }
-
-        /* Product Cards */
+        /* Product Card */
         .product-card {
-            border: 1px solid #e0e0e0;
-            border-radius: 12px;
-            overflow: hidden;
-            transition: box-shadow 0.3s;
-            height: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
         .product-card:hover {
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12) !important;
         }
-        .product-card img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
+
+        /* Sidebar Category Items */
+        .list-group-item-action {
+            transition: background-color 0.2s;
         }
-        .product-card .card-body {
-            padding: 16px;
-        }
-        .product-card .card-title {
-            font-weight: 600;
-            font-size: 1rem;
-        }
-        .product-card .card-text {
-            color: #666;
-            font-size: 0.85rem;
-        }
-        .product-card .price {
-            color: var(--primary-green);
-            font-weight: 700;
-            font-size: 1.1rem;
-        }
-        .product-card .badge-code {
-            background-color: var(--cream);
-            color: var(--dark);
-            font-size: 0.7rem;
-            padding: 4px 8px;
-            border-radius: 4px;
-        }
-        .product-card .btn-enquire {
-            background-color: var(--primary-green);
-            color: #fff;
-            border: none;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-        }
-        .product-card .btn-enquire:hover {
-            background-color: var(--light-green);
-            color: #fff;
+        .list-group-item-action:hover {
+            background-color: #e8f5e9;
         }
 
         /* Footer */
@@ -190,9 +129,6 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="#categories"><i class="fas fa-th-large me-1"></i>Categories</a>
-                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#products"><i class="fas fa-box me-1"></i>Products</a>
                     </li>
