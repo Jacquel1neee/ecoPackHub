@@ -136,12 +136,19 @@
             <!-- ===== RIGHT CONTENT: PRODUCTS ===== -->
             <div class="col-lg-9 col-md-8">
                 
-                <!-- Product Header -->
+                <!-- Product Header with Cart Link -->
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h4 class="fw-bold" style="color: var(--primary-green);">
                         <i class="fas fa-box me-2"></i>Our Products
                     </h4>
-                    <span class="text-muted small">{{ $products->count() }} products found</span>
+                    <div>
+                        <span class="text-muted small me-3">{{ $products->count() }} products found</span>
+                        @auth
+                            <a href="{{ route('cart.index') }}" class="btn btn-sm" style="background-color: var(--primary-green); color: #fff; border-radius: 20px;">
+                                <i class="fas fa-shopping-cart me-1"></i> View Cart
+                            </a>
+                        @endauth
+                    </div>
                 </div>
 
                 <!-- Product Grid -->
@@ -190,9 +197,21 @@
                                                 @endif
                                             </div>
                                             
-                                            <a href="#" class="btn btn-sm w-100 mt-2" style="background-color: var(--primary-green); color: #fff; border-radius: 20px;">
-                                                <i class="fas fa-envelope me-1"></i> Enquire
-                                            </a>
+                                            <!-- ===== ADD TO CART BUTTON ===== -->
+                                            @auth
+                                                <form action="{{ route('cart.add') }}" method="POST" class="mt-2">
+                                                    @csrf
+                                                    <input type="hidden" name="product_id" value="{{ $product->id }}">
+                                                    <input type="hidden" name="quantity" value="1">
+                                                    <button type="submit" class="btn btn-sm w-100" style="background-color: var(--primary-green); color: #fff; border-radius: 20px;">
+                                                        <i class="fas fa-cart-plus me-1"></i> Add to Cart
+                                                    </button>
+                                                </form>
+                                            @else
+                                                <a href="{{ route('login') }}" class="btn btn-sm w-100 mt-2" style="background-color: var(--primary-green); color: #fff; border-radius: 20px;">
+                                                    <i class="fas fa-sign-in-alt me-1"></i> Login to Buy
+                                                </a>
+                                            @endauth
                                         </div>
                                     </div>
                                 </div>

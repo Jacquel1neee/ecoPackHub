@@ -198,8 +198,11 @@
             <a href="{{ route('admin.categories.index') }}" class="nav-link {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}">
                 <i class="fas fa-th-large"></i> <span>Categories</span>
             </a>
-            
-            <!-- ===== NEW: Users Menu ===== -->
+            <!-- Orders -->
+            <a href="{{ route('admin.orders.index') }}" class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
+                <i class="fas fa-truck"></i> <span>Orders</span>
+            </a>
+            <!-- Users Menu -->
             <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
                 <i class="fas fa-users"></i> <span>Users</span>
             </a>
