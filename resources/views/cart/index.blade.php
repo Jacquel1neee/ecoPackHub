@@ -7,15 +7,15 @@
     </h2>
 
     @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show">
-            {{ session('success') }}
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i> {{ session('success') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     @endif
 
     @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show">
-            {{ session('error') }}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i> {{ session('error') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     @endif
@@ -42,35 +42,58 @@
                                         <tr>
                                             <td>
                                                 <div class="d-flex align-items-center">
-                                                    @if($item->product->image_path)
-                                                        <img src="{{ asset($item->product->image_path) }}" 
+                                                    @if($item->variant && $item->variant->product && $item->variant->product->image_path)
+                                                        <img src="{{ asset($item->variant->product->image_path) }}" 
                                                              style="width:50px;height:50px;object-fit:cover;border-radius:8px;margin-right:12px;">
+                                                    @else
+                                                        <div style="width:50px;height:50px;background:#f0f0f0;border-radius:8px;margin-right:12px;display:flex;align-items:center;justify-content:center;color:#999;">
+                                                            <i class="fas fa-box"></i>
+                                                        </div>
                                                     @endif
                                                     <div>
-                                                        <strong>{{ $item->product->name }}</strong>
+                                                        <strong>{{ $item->variant->product->name ?? 'Product' }}</strong>
                                                         <br>
-                                                        <small class="text-muted">{{ $item->product->code }}</small>
+                                                        <small class="text-muted">
+                                                            @if($item->variant)
+                                                                {{ $item->variant->size ?? 'Standard' }} - {{ $item->variant->packing_quantity ?? '' }}
+                                                            @endif
+                                                        </small>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td>RM {{ number_format($item->product->price, 2) }}</td>
+                                            <td>
+                                                @if($item->variant)
+                                                    RM {{ number_format($item->variant->price, 2) }}
+                                                @else
+                                                    <span class="text-muted">N/A</span>
+                                                @endif
+                                            </td>
                                             <td>
                                                 <form action="{{ route('cart.update', $item) }}" method="POST" class="d-flex align-items-center">
                                                     @csrf
                                                     @method('PATCH')
                                                     <input type="number" name="quantity" value="{{ $item->quantity }}" 
-                                                           min="1" max="999" style="width:60px;border-radius:8px;border:1px solid #ddd;padding:4px 8px;">
-                                                    <button type="submit" class="btn btn-sm btn-outline-success ms-2">
+                                                           min="1" max="{{ $item->variant->stock ?? 999 }}" 
+                                                           style="width:60px;border-radius:8px;border:1px solid #ddd;padding:4px 8px;text-align:center;">
+                                                    <button type="submit" class="btn btn-sm btn-outline-success ms-2" style="border-radius:50%;width:32px;height:32px;padding:0;">
                                                         <i class="fas fa-sync"></i>
                                                     </button>
                                                 </form>
                                             </td>
-                                            <td>RM {{ number_format($item->quantity * $item->product->price, 2) }}</td>
+                                            <td>
+                                                @if($item->variant)
+                                                    <span class="fw-bold" style="color: var(--primary-green);">
+                                                        RM {{ number_format($item->quantity * $item->variant->price, 2) }}
+                                                    </span>
+                                                @else
+                                                    <span class="text-muted">N/A</span>
+                                                @endif
+                                            </td>
                                             <td>
                                                 <form action="{{ route('cart.remove', $item) }}" method="POST">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" style="border-radius:50%;width:32px;height:32px;padding:0;" onclick="return confirm('Remove this item?')">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                 </form>
@@ -82,7 +105,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="mt-3">
+                <div class="mt-3 d-flex flex-wrap gap-2">
                     <form action="{{ route('cart.clear') }}" method="POST" class="d-inline">
                         @csrf
                         @method('DELETE')
@@ -90,7 +113,7 @@
                             <i class="fas fa-trash-alt me-1"></i> Clear Cart
                         </button>
                     </form>
-                    <a href="{{ route('home') }}" class="btn btn-outline-secondary btn-sm ms-2">
+                    <a href="{{ route('home') }}#products" class="btn btn-outline-secondary btn-sm">
                         <i class="fas fa-arrow-left me-1"></i> Continue Shopping
                     </a>
                 </div>
@@ -104,8 +127,8 @@
                     </div>
                     <div class="card-body">
                         <div class="d-flex justify-content-between mb-2">
-                            <span>Items ({{ $items->count() }})</span>
-                            <span>RM {{ number_format($total, 2) }}</span>
+                            <span>Items (<span id="item-count">{{ $items->count() }}</span>)</span>
+                            <span>RM <span id="total-display">{{ number_format($total, 2) }}</span></span>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between mb-3 fw-bold">
@@ -117,13 +140,24 @@
                         </a>
                     </div>
                 </div>
+
+                <!-- Quick Tips -->
+                <div class="card shadow-sm border-0 rounded-3 mt-3">
+                    <div class="card-body" style="background: #f5f0e8; border-radius: 12px;">
+                        <p class="mb-0 small">
+                            <i class="fas fa-leaf me-1" style="color: var(--primary-green);"></i>
+                            All products are biodegradable and eco-friendly.
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
     @else
         <div class="text-center py-5">
             <i class="fas fa-shopping-cart fa-4x text-muted mb-3"></i>
             <p class="lead">Your cart is empty</p>
-            <a href="{{ route('home') }}" class="btn" style="background-color: var(--primary-green); color: #fff; border-radius: 20px;">
+            <p class="text-muted">Browse our products and add items you love!</p>
+            <a href="{{ route('home') }}#products" class="btn" style="background-color: var(--primary-green); color: #fff; border-radius: 20px; padding: 12px 30px;">
                 <i class="fas fa-arrow-left me-1"></i> Start Shopping
             </a>
         </div>

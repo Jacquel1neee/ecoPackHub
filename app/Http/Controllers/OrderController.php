@@ -11,11 +11,6 @@ use Illuminate\Support\Str;
 
 class OrderController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
-
     // Checkout page
     public function checkout()
     {
@@ -25,9 +20,9 @@ class OrderController extends Controller
                 ->with('error', 'Your cart is empty!');
         }
 
-        $items = $cart->items()->with('product')->get();
+        $items = $cart->items()->with('variant.product')->get();
         $total = $items->sum(function ($item) {
-            return $item->quantity * $item->product->price;
+            return $item->quantity * ($item->variant->price ?? 0);
         });
 
         return view('order.checkout', compact('items', 'total'));
@@ -48,10 +43,10 @@ class OrderController extends Controller
                 ->with('error', 'Your cart is empty!');
         }
 
-        // Calculate total
-        $items = $cart->items()->with('product')->get();
+        // 使用 variant 关系计算 total
+        $items = $cart->items()->with('variant')->get();
         $total = $items->sum(function ($item) {
-            return $item->quantity * $item->product->price;
+            return $item->quantity * ($item->variant->price ?? 0);
         });
 
         // Create order
@@ -69,9 +64,9 @@ class OrderController extends Controller
         foreach ($items as $item) {
             OrderItem::create([
                 'order_id' => $order->id,
-                'product_id' => $item->product_id,
+                'variant_id' => $item->variant_id,
                 'quantity' => $item->quantity,
-                'price' => $item->product->price
+                'price' => $item->variant->price ?? 0
             ]);
         }
 
@@ -99,36 +94,7 @@ class OrderController extends Controller
             abort(403);
         }
 
-        $order->load('items.product');
+        $order->load('items.variant.product');
         return view('order.show', compact('order'));
-    }
-
-    // Admin: View all orders
-    public function adminIndex()
-    {
-        if (Auth::user()->role !== 1) {
-            abort(403);
-        }
-
-        $orders = Order::with('user')->orderBy('created_at', 'desc')->get();
-        return view('admin.orders.index', compact('orders'));
-    }
-
-    // Admin: Update order status
-    public function updateStatus(Request $request, Order $order)
-    {
-        if (Auth::user()->role !== 1) {
-            abort(403);
-        }
-
-        $request->validate([
-            'status' => 'required|in:pending,processing,completed,cancelled'
-        ]);
-
-        $order->status = $request->status;
-        $order->save();
-
-        return redirect()->route('admin.orders.index')
-            ->with('success', "Order #{$order->order_number} status updated to {$order->status_label}!");
     }
 }

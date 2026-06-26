@@ -55,8 +55,14 @@
                 <div class="card-body">
                     @foreach($items as $item)
                         <div class="d-flex justify-content-between mb-2">
-                            <span>{{ $item->product->name }} × {{ $item->quantity }}</span>
-                            <span>RM {{ number_format($item->quantity * $item->product->price, 2) }}</span>
+                            <span>
+                                {{ $item->variant->product->name ?? 'Product' }}
+                                @if($item->variant->size)
+                                    ({{ $item->variant->size }})
+                                @endif
+                                × {{ $item->quantity }}
+                            </span>
+                            <span>RM {{ number_format($item->quantity * ($item->variant->price ?? 0), 2) }}</span>
                         </div>
                     @endforeach
                     <hr>

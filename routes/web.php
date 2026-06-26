@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 
 // ========== PUBLIC ROUTES ==========
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/product/{product}', [App\Http\Controllers\ProductController::class, 'show'])->name('product.show');
 
 // ========== AUTH ROUTES (Breeze) ==========
 Route::get('/dashboard', function () {
@@ -25,16 +26,17 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// ========== CART ROUTES (Protected) ==========
+// ========== CART ROUTES (Protected - middleware handled in route) ==========
 Route::middleware(['auth'])->prefix('cart')->name('cart.')->group(function () {
     Route::get('/', [CartController::class, 'index'])->name('index');
+    Route::get('/count', [CartController::class, 'getCount'])->name('count');
     Route::post('/add', [CartController::class, 'add'])->name('add');
     Route::patch('/update/{item}', [CartController::class, 'update'])->name('update');
     Route::delete('/remove/{item}', [CartController::class, 'remove'])->name('remove');
     Route::delete('/clear', [CartController::class, 'clear'])->name('clear');
 });
 
-// ========== ORDER ROUTES (Protected) ==========
+// ========== ORDER ROUTES (Protected - middleware handled in route) ==========
 Route::middleware(['auth'])->group(function () {
     Route::get('/checkout', [OrderController::class, 'checkout'])->name('checkout');
     Route::post('/orders/place', [OrderController::class, 'placeOrder'])->name('orders.place');

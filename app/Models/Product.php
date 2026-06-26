@@ -9,8 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Product extends Model
 {
     protected $fillable = [
-        'category_id', 'code', 'name', 'description',
-        'packing_quantity', 'material', 'size', 'image', 'image_path', 'price', 'stock'
+        'category_id', 'code', 'name', 'description', 
+        'material', 'image', 'image_path', 'product_group'
     ];
 
     public function category(): BelongsTo
@@ -18,18 +18,43 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
+    public function variants(): HasMany
+    {
+        return $this->hasMany(ProductVariant::class);
+    }
+
     public function sales(): HasMany
     {
         return $this->hasMany(Sale::class);
     }
 
+    public function getMinPriceAttribute()
+    {
+        return $this->variants->min('price') ?? 0;
+    }
+
+    public function getMaxPriceAttribute()
+    {
+        return $this->variants->max('price') ?? 0;
+    }
+
+    public function getTotalStockAttribute()
+    {
+        return $this->variants->sum('stock');
+    }
+
+    public function getSizesAttribute()
+    {
+        return $this->variants->pluck('size')->filter()->unique()->values();
+    }
+
     public function getTotalSalesAttribute(): int
     {
-        return $this->sales()->sum('quantity_sold');
+        return $this->sales()->sum('quantity_sold') ?? 0;
     }
 
     public function getTotalRevenueAttribute(): float
     {
-        return $this->sales()->sum('total_revenue');
+        return $this->sales()->sum('total_revenue') ?? 0;
     }
 }

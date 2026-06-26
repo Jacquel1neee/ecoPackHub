@@ -22,6 +22,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th>Product</th>
+                                <th>Variant</th>
                                 <th>Quantity</th>
                                 <th>Price</th>
                                 <th>Subtotal</th>
@@ -32,16 +33,23 @@
                                 <tr>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            @if($item->product->image_path)
-                                                <img src="{{ asset($item->product->image_path) }}" 
+                                            @if($item->variant && $item->variant->product && $item->variant->product->image_path)
+                                                <img src="{{ asset($item->variant->product->image_path) }}" 
                                                      style="width:40px;height:40px;object-fit:cover;border-radius:6px;margin-right:10px;">
                                             @endif
                                             <div>
-                                                <strong>{{ $item->product->name }}</strong>
+                                                <strong>{{ $item->variant->product->name ?? 'Product' }}</strong>
                                                 <br>
-                                                <small class="text-muted">{{ $item->product->code }}</small>
+                                                <small class="text-muted">{{ $item->variant->product->code ?? '' }}</small>
                                             </div>
                                         </div>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ $item->variant->size ?? 'Standard' }}
+                                            <br>
+                                            {{ $item->variant->packing_quantity ?? '' }}
+                                        </small>
                                     </td>
                                     <td>{{ $item->quantity }}</td>
                                     <td>RM {{ number_format($item->price, 2) }}</td>
@@ -51,7 +59,7 @@
                         </tbody>
                         <tfoot>
                             <tr class="fw-bold">
-                                <td colspan="3" class="text-end">Total</td>
+                                <td colspan="4" class="text-end">Total</td>
                                 <td style="color: var(--primary-green);">RM {{ number_format($order->total_amount, 2) }}</td>
                             </tr>
                         </tfoot>

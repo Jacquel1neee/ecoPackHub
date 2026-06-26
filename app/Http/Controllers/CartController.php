@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Cart;
 use App\Models\CartItem;
-use App\Models\Product;
+use App\Models\ProductVariant;
 use Illuminate\Support\Facades\Auth;
 
 class CartController extends Controller
@@ -24,44 +24,91 @@ class CartController extends Controller
     public function index()
     {
         $cart = $this->getCart();
-        $items = $cart->items()->with('product')->get();
+        $items = $cart->items()->with('variant.product')->get();
         $total = $items->sum(function ($item) {
-            return $item->quantity * $item->product->price;
+            return $item->quantity * $item->variant->price;
         });
         
         return view('cart.index', compact('items', 'total'));
     }
 
-    // Add product to cart
+    // ===== AJAX: Get cart count =====
+    public function getCount()
+    {
+        if (!Auth::check()) {
+            return response()->json(['count' => 0]);
+        }
+        
+        $cart = Cart::where('user_id', Auth::id())->first();
+        if (!$cart) {
+            return response()->json(['count' => 0]);
+        }
+        
+        $count = $cart->items()->sum('quantity');
+        return response()->json(['count' => $count]);
+    }
+
+    // ===== AJAX: Add product variant to cart (returns JSON) =====
     public function add(Request $request)
     {
-        $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'quantity' => 'integer|min:1|max:999'
-        ]);
-
-        $cart = $this->getCart();
-        $product = Product::find($request->product_id);
-        $quantity = $request->quantity ?? 1;
-
-        // Check if product already in cart
-        $cartItem = CartItem::where('cart_id', $cart->id)
-            ->where('product_id', $product->id)
-            ->first();
-
-        if ($cartItem) {
-            $cartItem->quantity += $quantity;
-            $cartItem->save();
-        } else {
-            CartItem::create([
-                'cart_id' => $cart->id,
-                'product_id' => $product->id,
-                'quantity' => $quantity
+        try {
+            $request->validate([
+                'variant_id' => 'required|exists:product_variants,id',
+                'quantity' => 'integer|min:1|max:999'
             ]);
-        }
 
-        return redirect()->route('cart.index')
-            ->with('success', "{$product->name} added to cart!");
+            $cart = $this->getCart();
+            $variant = ProductVariant::with('product')->find($request->variant_id);
+            $quantity = $request->quantity ?? 1;
+
+            // Check stock
+            if ($variant->stock < $quantity) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Not enough stock available. Only ' . $variant->stock . ' left.'
+                ], 400);
+            }
+
+            // Check if variant already in cart
+            $cartItem = CartItem::where('cart_id', $cart->id)
+                ->where('variant_id', $variant->id)
+                ->first();
+
+            if ($cartItem) {
+                $newQuantity = $cartItem->quantity + $quantity;
+                if ($variant->stock < $newQuantity) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Not enough stock. You already have ' . $cartItem->quantity . ' in cart.'
+                    ], 400);
+                }
+                $cartItem->quantity = $newQuantity;
+                $cartItem->save();
+            } else {
+                CartItem::create([
+                    'cart_id' => $cart->id,
+                    'variant_id' => $variant->id,
+                    'quantity' => $quantity
+                ]);
+            }
+
+            // Get updated cart count
+            $count = $cart->items()->sum('quantity');
+
+            $variantName = $variant->size ? $variant->product->name . ' (' . $variant->size . ')' : $variant->product->name;
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$variantName} added to cart!",
+                'cart_count' => $count
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to add to cart: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     // Update cart item quantity
@@ -71,9 +118,14 @@ class CartController extends Controller
             'quantity' => 'required|integer|min:1|max:999'
         ]);
 
-        // Ensure item belongs to user's cart
         if ($item->cart->user_id !== Auth::id()) {
             abort(403);
+        }
+
+        // Check stock
+        if ($item->variant->stock < $request->quantity) {
+            return redirect()->route('cart.index')
+                ->with('error', 'Not enough stock available. Only ' . $item->variant->stock . ' left.');
         }
 
         $item->quantity = $request->quantity;

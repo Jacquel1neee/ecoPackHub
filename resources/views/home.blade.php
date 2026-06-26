@@ -78,7 +78,16 @@
                     </div>
                     <div class="card-body">
                         @php
-                            $sizes = $allProducts->pluck('size')->unique()->filter()->values();
+                            // Get sizes from variants
+                            $sizes = [];
+                            foreach ($allProducts as $product) {
+                                foreach ($product->variants as $variant) {
+                                    if ($variant->size) {
+                                        $sizes[] = $variant->size;
+                                    }
+                                }
+                            }
+                            $sizes = collect($sizes)->unique()->filter()->values();
                         @endphp
                         @forelse($sizes as $size)
                             <div class="form-check mb-2">
@@ -146,8 +155,23 @@
                         @auth
                             <a href="{{ route('cart.index') }}" class="btn btn-sm" style="background-color: var(--primary-green); color: #fff; border-radius: 20px;">
                                 <i class="fas fa-shopping-cart me-1"></i> View Cart
+                                <span id="cart-badge" class="badge bg-light text-dark ms-1 rounded-pill" style="font-size: 0.7rem;">0</span>
                             </a>
                         @endauth
+                    </div>
+                </div>
+
+                <!-- Toast Notification -->
+                <div id="cart-toast" class="position-fixed top-0 end-0 p-3" style="z-index: 9999; display: none;">
+                    <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div class="toast-header bg-success text-white">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong class="me-auto">Added to Cart</strong>
+                            <button type="button" class="btn-close btn-close-white" onclick="hideToast()"></button>
+                        </div>
+                        <div class="toast-body" id="toast-message">
+                            Product added to cart!
+                        </div>
                     </div>
                 </div>
 
@@ -157,58 +181,75 @@
                         @foreach($products as $product)
                             <div class="col-xl-3 col-lg-4 col-md-6 col-6">
                                 <div class="card product-card h-100 shadow-sm border-0 rounded-3">
-                                    <!-- Product Image -->
-                                    <div class="position-relative">
-                                        @if($product->image_path)
-                                            <img src="{{ asset($product->image_path) }}" class="card-img-top" alt="{{ $product->name }}" style="height: 180px; object-fit: cover; border-radius: 12px 12px 0 0;">
-                                        @else
-                                            <img src="https://via.placeholder.com/300x200/2e7d32/ffffff?text={{ urlencode($product->code) }}" class="card-img-top" alt="{{ $product->name }}" style="height: 180px; object-fit: cover; border-radius: 12px 12px 0 0;">
-                                        @endif
-                                        <!-- Code Badge -->
-                                        <span class="position-absolute top-0 end-0 m-2 badge bg-dark bg-opacity-75 small">
-                                            {{ $product->code }}
-                                        </span>
-                                    </div>
+                                    <!-- Product Image - Clickable to Detail -->
+                                    <a href="{{ route('product.show', $product) }}" class="text-decoration-none">
+                                        <div class="position-relative">
+                                            @if($product->image_path)
+                                                <img src="{{ asset($product->image_path) }}" class="card-img-top" alt="{{ $product->name }}" style="height: 180px; object-fit: cover; border-radius: 12px 12px 0 0;">
+                                            @else
+                                                <img src="https://via.placeholder.com/300x200/2e7d32/ffffff?text={{ urlencode($product->code) }}" class="card-img-top" alt="{{ $product->name }}" style="height: 180px; object-fit: cover; border-radius: 12px 12px 0 0;">
+                                            @endif
+                                            <!-- Code Badge -->
+                                            <span class="position-absolute top-0 end-0 m-2 badge bg-dark bg-opacity-75 small">
+                                                {{ $product->code }}
+                                            </span>
+                                            <!-- Variant Count Badge -->
+                                            <span class="position-absolute bottom-0 start-0 m-2 badge bg-primary bg-opacity-75 small">
+                                                <i class="fas fa-layer-group me-1"></i> {{ $product->variants->count() }} variants
+                                            </span>
+                                        </div>
+                                    </a>
                                     
                                     <div class="card-body d-flex flex-column">
-                                        <h6 class="card-title fw-semibold mb-1 text-truncate">{{ $product->name }}</h6>
+                                        <!-- Product Name - Clickable to Detail -->
+                                        <a href="{{ route('product.show', $product) }}" class="text-decoration-none text-dark">
+                                            <h6 class="card-title fw-semibold mb-1 text-truncate">{{ $product->name }}</h6>
+                                        </a>
+                                        
                                         <p class="card-text small text-muted mb-2" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
                                             {{ Str::limit($product->description, 50) }}
                                         </p>
                                         
                                         <div class="mt-auto">
+                                            <!-- Price - Show Min Price -->
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <span class="fw-bold" style="color: var(--primary-green); font-size: 1.1rem;">
-                                                    RM {{ number_format($product->price, 2) }}
+                                                    RM {{ number_format($product->min_price, 2) }}
+                                                    @if($product->min_price != $product->max_price)
+                                                        <small class="text-muted fw-normal">- RM {{ number_format($product->max_price, 2) }}</small>
+                                                    @endif
                                                 </span>
-                                                <small class="text-muted">{{ $product->packing_quantity }}</small>
+                                                <small class="text-muted">{{ $product->variants->first()->packing_quantity ?? '' }}</small>
                                             </div>
                                             
+                                            <!-- Material & Size Tags -->
                                             <div class="mt-1">
                                                 @if($product->material)
                                                     <span class="badge bg-light text-dark me-1 small fw-normal">
                                                         <i class="fas fa-tag"></i> {{ $product->material }}
                                                     </span>
                                                 @endif
-                                                @if($product->size)
+                                                @php
+                                                    $sizesList = $product->variants->pluck('size')->filter()->unique()->values();
+                                                @endphp
+                                                @if($sizesList->count() > 0)
                                                     <span class="badge bg-light text-dark small fw-normal">
-                                                        <i class="fas fa-ruler"></i> {{ $product->size }}
+                                                        <i class="fas fa-ruler"></i> {{ $sizesList->first() }}
+                                                        @if($sizesList->count() > 1)
+                                                            +{{ $sizesList->count() - 1 }} more
+                                                        @endif
                                                     </span>
                                                 @endif
                                             </div>
                                             
-                                            <!-- ===== ADD TO CART BUTTON ===== -->
+                                            <!-- ===== SELECT OPTIONS BUTTON (goes to detail page) ===== -->
                                             @auth
-                                                <form action="{{ route('cart.add') }}" method="POST" class="mt-2">
-                                                    @csrf
-                                                    <input type="hidden" name="product_id" value="{{ $product->id }}">
-                                                    <input type="hidden" name="quantity" value="1">
-                                                    <button type="submit" class="btn btn-sm w-100" style="background-color: var(--primary-green); color: #fff; border-radius: 20px;">
-                                                        <i class="fas fa-cart-plus me-1"></i> Add to Cart
-                                                    </button>
-                                                </form>
+                                                <a href="{{ route('product.show', $product) }}" class="btn btn-sm w-100 mt-2" 
+                                                   style="background-color: var(--primary-green); color: #fff; border-radius: 20px; border: none; text-decoration: none; display: inline-block; text-align: center;">
+                                                    <i class="fas fa-cart-plus me-1"></i> Select Options
+                                                </a>
                                             @else
-                                                <a href="{{ route('login') }}" class="btn btn-sm w-100 mt-2" style="background-color: var(--primary-green); color: #fff; border-radius: 20px;">
+                                                <a href="{{ route('login') }}" class="btn btn-sm w-100 mt-2" style="background-color: var(--primary-green); color: #fff; border-radius: 20px; text-decoration: none; display: inline-block; text-align: center;">
                                                     <i class="fas fa-sign-in-alt me-1"></i> Login to Buy
                                                 </a>
                                             @endauth
@@ -301,6 +342,27 @@
             }
             
             window.location.href = currentUrl.toString();
+        }
+
+        // ===== FETCH CART COUNT =====
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchCartCount();
+        });
+
+        function fetchCartCount() {
+            fetch('{{ route("cart.count") }}', {
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const badge = document.getElementById('cart-badge');
+                if (badge && data.count !== undefined) {
+                    badge.textContent = data.count;
+                }
+            })
+            .catch(error => console.error('Error fetching cart count:', error));
         }
     </script>
 @endsection
