@@ -20,7 +20,7 @@
                         <th>Category</th>
                         <th>Variants</th>
                         <th>Price Range</th>
-                        <th style="width: 130px; text-align: center;">Actions</th>
+                        <th style="width: 130px; text-align: left;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
