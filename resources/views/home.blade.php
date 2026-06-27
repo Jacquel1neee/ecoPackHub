@@ -23,7 +23,14 @@
                     <div class="card-header bg-white py-3 fw-bold" style="border-bottom: 2px solid var(--primary-green); color: var(--primary-green);">
                         <i class="fas fa-th-large me-2"></i>All Categories
                     </div>
-                    <div class="list-group list-group-flush">
+                    <div class="list-group list-group-flush" id="category-list">
+                        @php
+                            $allCategories = $categories->toArray();
+                            $firstFiveCategories = array_slice($allCategories, 0, 5);
+                            $remainingCategories = array_slice($allCategories, 5);
+                        @endphp
+                        
+                        <!-- All Products -->
                         <a href="{{ route('home') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center border-0 py-2 px-3 {{ !request()->has('category') ? 'active' : '' }}" @if(!request()->has('category')) style="background-color: #e8f5e9;" @endif>
                             <span>
                                 <i class="fas fa-box me-2" style="color: var(--primary-green); width: 20px;"></i>
@@ -31,19 +38,39 @@
                             </span>
                             <span class="badge bg-secondary rounded-pill">{{ $totalProductsCount }}</span>
                         </a>
-                        @forelse($categories as $category)
-                            <a href="{{ route('home', ['category' => $category->slug]) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center border-0 py-2 px-3 {{ request()->get('category') == $category->slug ? 'active' : '' }}" @if(request()->get('category') == $category->slug) style="background-color: #e8f5e9;" @endif>
+                        
+                        <!-- First 5 Categories -->
+                        @foreach($firstFiveCategories as $category)
+                            <a href="{{ route('home', ['category' => $category['slug']]) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center border-0 py-2 px-3 {{ request()->get('category') == $category['slug'] ? 'active' : '' }}" @if(request()->get('category') == $category['slug']) style="background-color: #e8f5e9;" @endif>
                                 <span>
-                                    <i class="{{ $category->icon ?? 'fa-solid fa-box' }} me-2" style="color: var(--primary-green); width: 20px;"></i>
-                                    {{ $category->name }}
+                                    <i class="{{ $category['icon'] ?? 'fa-solid fa-box' }} me-2" style="color: var(--primary-green); width: 20px;"></i>
+                                    {{ $category['name'] }}
                                 </span>
-                                <span class="badge bg-secondary rounded-pill">{{ $category->products_count ?? 0 }}</span>
+                                <span class="badge bg-secondary rounded-pill">{{ $category['products_count'] ?? 0 }}</span>
                             </a>
-                        @empty
-                            <div class="text-center text-muted py-3">
-                                <p class="mb-0 small">No categories available.</p>
-                            </div>
-                        @endforelse
+                        @endforeach
+                        
+                        <!-- Remaining Categories (hidden by default) -->
+                        <div id="category-extra" style="display: none;">
+                            @foreach($remainingCategories as $category)
+                                <a href="{{ route('home', ['category' => $category['slug']]) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center border-0 py-2 px-3 {{ request()->get('category') == $category['slug'] ? 'active' : '' }}" @if(request()->get('category') == $category['slug']) style="background-color: #e8f5e9;" @endif>
+                                    <span>
+                                        <i class="{{ $category['icon'] ?? 'fa-solid fa-box' }} me-2" style="color: var(--primary-green); width: 20px;"></i>
+                                        {{ $category['name'] }}
+                                    </span>
+                                    <span class="badge bg-secondary rounded-pill">{{ $category['products_count'] ?? 0 }}</span>
+                                </a>
+                            @endforeach
+                        </div>
+                        
+                        <!-- Show More/Less Link -->
+                        @if(count($remainingCategories) > 0)
+                            <a href="javascript:void(0)" class="list-group-item list-group-item-action border-0 py-2 px-3 text-center" 
+                               id="category-toggle" style="color: var(--primary-green); font-size: 0.85rem; background: transparent;"
+                               onclick="toggleSection('category')">
+                                <span id="category-toggle-text">+ Show More ({{ count($remainingCategories) }})</span>
+                            </a>
+                        @endif
                     </div>
                 </div>
 
@@ -52,11 +79,14 @@
                     <div class="card-header bg-white py-3 fw-bold" style="color: var(--primary-green);">
                         <i class="fas fa-tag me-2"></i>Material
                     </div>
-                    <div class="card-body">
+                    <div class="card-body" id="material-list">
                         @php
-                            $materials = $allProducts->pluck('material')->unique()->filter()->values();
+                            $allMaterials = $allProducts->pluck('material')->unique()->filter()->values();
+                            $firstFiveMaterials = $allMaterials->slice(0, 5);
+                            $remainingMaterials = $allMaterials->slice(5);
                         @endphp
-                        @forelse($materials as $material)
+                        
+                        @forelse($firstFiveMaterials as $material)
                             <div class="form-check mb-2">
                                 <input class="form-check-input" type="checkbox" id="material_{{ Str::slug($material) }}" 
                                        {{ request()->get('material') && in_array($material, explode(',', request()->get('material'))) ? 'checked' : '' }}
@@ -68,6 +98,28 @@
                         @empty
                             <p class="text-muted small mb-0">No materials available</p>
                         @endforelse
+                        
+                        <!-- Remaining Materials -->
+                        <div id="material-extra" style="display: none;">
+                            @foreach($remainingMaterials as $material)
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="material_{{ Str::slug($material) }}" 
+                                           {{ request()->get('material') && in_array($material, explode(',', request()->get('material'))) ? 'checked' : '' }}
+                                           onchange="applyFilter('material', '{{ $material }}')">
+                                    <label class="form-check-label" for="material_{{ Str::slug($material) }}">
+                                        {{ $material }}
+                                    </label>
+                                </div>
+                            @endforeach
+                        </div>
+                        
+                        @if($remainingMaterials->count() > 0)
+                            <a href="javascript:void(0)" class="d-block text-center mt-1" 
+                               id="material-toggle" style="color: var(--primary-green); font-size: 0.85rem; text-decoration: none;"
+                               onclick="toggleSection('material')">
+                                <span id="material-toggle-text">+ Show More ({{ $remainingMaterials->count() }})</span>
+                            </a>
+                        @endif
                     </div>
                 </div>
 
@@ -76,20 +128,22 @@
                     <div class="card-header bg-white py-3 fw-bold" style="color: var(--primary-green);">
                         <i class="fas fa-ruler me-2"></i>Size
                     </div>
-                    <div class="card-body">
+                    <div class="card-body" id="size-list">
                         @php
-                            // Get sizes from variants
-                            $sizes = [];
+                            $allSizes = [];
                             foreach ($allProducts as $product) {
                                 foreach ($product->variants as $variant) {
                                     if ($variant->size) {
-                                        $sizes[] = $variant->size;
+                                        $allSizes[] = $variant->size;
                                     }
                                 }
                             }
-                            $sizes = collect($sizes)->unique()->filter()->values();
+                            $allSizes = collect($allSizes)->unique()->filter()->values();
+                            $firstFiveSizes = $allSizes->slice(0, 5);
+                            $remainingSizes = $allSizes->slice(5);
                         @endphp
-                        @forelse($sizes as $size)
+                        
+                        @forelse($firstFiveSizes as $size)
                             <div class="form-check mb-2">
                                 <input class="form-check-input" type="checkbox" id="size_{{ Str::slug($size) }}"
                                        {{ request()->get('size') && in_array($size, explode(',', request()->get('size'))) ? 'checked' : '' }}
@@ -101,6 +155,28 @@
                         @empty
                             <p class="text-muted small mb-0">No sizes available</p>
                         @endforelse
+                        
+                        <!-- Remaining Sizes -->
+                        <div id="size-extra" style="display: none;">
+                            @foreach($remainingSizes as $size)
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="size_{{ Str::slug($size) }}"
+                                           {{ request()->get('size') && in_array($size, explode(',', request()->get('size'))) ? 'checked' : '' }}
+                                           onchange="applyFilter('size', '{{ $size }}')">
+                                    <label class="form-check-label" for="size_{{ Str::slug($size) }}">
+                                        {{ $size }}
+                                    </label>
+                                </div>
+                            @endforeach
+                        </div>
+                        
+                        @if($remainingSizes->count() > 0)
+                            <a href="javascript:void(0)" class="d-block text-center mt-1" 
+                               id="size-toggle" style="color: var(--primary-green); font-size: 0.85rem; text-decoration: none;"
+                               onclick="toggleSection('size')">
+                                <span id="size-toggle-text">+ Show More ({{ $remainingSizes->count() }})</span>
+                            </a>
+                        @endif
                     </div>
                 </div>
 
@@ -132,14 +208,6 @@
                 <a href="{{ route('home') }}" class="btn btn-outline-secondary w-100 btn-sm">
                     <i class="fas fa-undo me-1"></i> Clear All Filters
                 </a>
-
-                <!-- Promo Banner -->
-                <div class="card shadow-sm border-0 rounded-3 mt-3 d-none d-md-block">
-                    <div class="card-body text-center" style="background: #f5f0e8; border-radius: 12px;">
-                        <i class="fas fa-leaf fa-2x mb-2" style="color: var(--primary-green);"></i>
-                        <p class="mb-0 small">Eco-friendly packaging<br>solutions for your business</p>
-                    </div>
-                </div>
             </div>
 
             <!-- ===== RIGHT CONTENT: PRODUCTS ===== -->
@@ -177,79 +245,75 @@
 
                 <!-- Product Grid -->
                 @if($products->count() > 0)
-                    <div class="row g-3">
+                    <div class="row g-4">
                         @foreach($products as $product)
                             <div class="col-xl-3 col-lg-4 col-md-6 col-6">
-                                <div class="card product-card h-100 shadow-sm border-0 rounded-3">
-                                    <!-- Product Image - Clickable to Detail -->
-                                    <a href="{{ route('product.show', $product) }}" class="text-decoration-none">
-                                        <div class="position-relative">
-                                            @if($product->image_path)
-                                                <img src="{{ asset($product->image_path) }}" class="card-img-top" alt="{{ $product->name }}" style="height: 180px; object-fit: cover; border-radius: 12px 12px 0 0;">
-                                            @else
-                                                <img src="https://via.placeholder.com/300x200/2e7d32/ffffff?text={{ urlencode($product->code) }}" class="card-img-top" alt="{{ $product->name }}" style="height: 180px; object-fit: cover; border-radius: 12px 12px 0 0;">
-                                            @endif
-                                            <!-- Code Badge -->
-                                            <span class="position-absolute top-0 end-0 m-2 badge bg-dark bg-opacity-75 small">
-                                                {{ $product->code }}
-                                            </span>
-                                            <!-- Variant Count Badge -->
-                                            <span class="position-absolute bottom-0 start-0 m-2 badge bg-primary bg-opacity-75 small">
-                                                <i class="fas fa-layer-group me-1"></i> {{ $product->variants->count() }} variants
-                                            </span>
-                                        </div>
+                                <div class="card product-card h-100 shadow-sm border-0 rounded-3 overflow-hidden" style="transition: transform 0.2s;">
+                                    <!-- Product Image -->
+                                    <a href="{{ route('product.show', $product) }}" class="text-decoration-none d-block position-relative" style="overflow: hidden; background: #f8f9fa; height: 200px;">
+                                        @if($product->image_path)
+                                            <img src="{{ asset($product->image_path) }}" class="w-100 h-100" alt="{{ $product->name }}" style="object-fit: cover;">
+                                        @else
+                                            <img src="https://via.placeholder.com/300x200/2e7d32/ffffff?text={{ urlencode($product->code) }}" class="w-100 h-100" alt="{{ $product->name }}" style="object-fit: cover;">
+                                        @endif
+                                        <span class="position-absolute top-0 end-0 m-2 badge bg-dark bg-opacity-75 small px-2 py-1" style="font-size: 0.6rem; letter-spacing: 0.5px;">
+                                            {{ $product->code }}
+                                        </span>
+                                        <span class="position-absolute bottom-0 start-0 m-2 badge bg-primary bg-opacity-75 small px-2 py-1" style="font-size: 0.6rem;">
+                                            <i class="fas fa-layer-group me-1"></i> {{ $product->variants->count() }}
+                                        </span>
                                     </a>
                                     
-                                    <div class="card-body d-flex flex-column">
-                                        <!-- Product Name - Clickable to Detail -->
+                                    <div class="card-body d-flex flex-column p-3">
                                         <a href="{{ route('product.show', $product) }}" class="text-decoration-none text-dark">
-                                            <h6 class="card-title fw-semibold mb-1 text-truncate">{{ $product->name }}</h6>
+                                            <h6 class="card-title fw-semibold mb-1" style="font-size: 0.9rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.4rem;">
+                                                {{ $product->name }}
+                                            </h6>
                                         </a>
                                         
-                                        <p class="card-text small text-muted mb-2" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
-                                            {{ Str::limit($product->description, 50) }}
+                                        <p class="card-text small text-muted mb-2" style="display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; min-height: 1.2rem;">
+                                            {{ Str::limit($product->description, 40) }}
                                         </p>
                                         
                                         <div class="mt-auto">
-                                            <!-- Price - Show Min Price -->
                                             <div class="d-flex justify-content-between align-items-center">
-                                                <span class="fw-bold" style="color: var(--primary-green); font-size: 1.1rem;">
+                                                <span class="fw-bold" style="color: var(--primary-green); font-size: 1rem;">
                                                     RM {{ number_format($product->min_price, 2) }}
                                                     @if($product->min_price != $product->max_price)
-                                                        <small class="text-muted fw-normal">- RM {{ number_format($product->max_price, 2) }}</small>
+                                                        <small class="text-muted fw-normal" style="font-size: 0.7rem;">- RM {{ number_format($product->max_price, 2) }}</small>
                                                     @endif
                                                 </span>
-                                                <small class="text-muted">{{ $product->variants->first()->packing_quantity ?? '' }}</small>
+                                                <small class="text-muted" style="font-size: 0.6rem;">{{ $product->variants->first()->packing_quantity ?? '' }}</small>
                                             </div>
                                             
-                                            <!-- Material & Size Tags -->
-                                            <div class="mt-1">
+                                            <div class="mt-1" style="min-height: 1.2rem;">
                                                 @if($product->material)
-                                                    <span class="badge bg-light text-dark me-1 small fw-normal">
-                                                        <i class="fas fa-tag"></i> {{ $product->material }}
+                                                    <span class="badge bg-light text-dark me-1" style="font-size: 0.55rem; font-weight: 400; padding: 2px 6px;">
+                                                        <i class="fas fa-tag" style="font-size: 0.5rem;"></i> {{ $product->material }}
                                                     </span>
                                                 @endif
                                                 @php
                                                     $sizesList = $product->variants->pluck('size')->filter()->unique()->values();
                                                 @endphp
                                                 @if($sizesList->count() > 0)
-                                                    <span class="badge bg-light text-dark small fw-normal">
-                                                        <i class="fas fa-ruler"></i> {{ $sizesList->first() }}
+                                                    <span class="badge bg-light text-dark" style="font-size: 0.55rem; font-weight: 400; padding: 2px 6px;">
+                                                        <i class="fas fa-ruler" style="font-size: 0.5rem;"></i> 
+                                                        {{ $sizesList->first() }}
                                                         @if($sizesList->count() > 1)
-                                                            +{{ $sizesList->count() - 1 }} more
+                                                            +{{ $sizesList->count() - 1 }}
                                                         @endif
                                                     </span>
                                                 @endif
                                             </div>
                                             
-                                            <!-- ===== SELECT OPTIONS BUTTON (goes to detail page) ===== -->
                                             @auth
                                                 <a href="{{ route('product.show', $product) }}" class="btn btn-sm w-100 mt-2" 
-                                                   style="background-color: var(--primary-green); color: #fff; border-radius: 20px; border: none; text-decoration: none; display: inline-block; text-align: center;">
+                                                   style="background-color: var(--primary-green); color: #fff; border-radius: 20px; border: none; text-decoration: none; display: inline-block; text-align: center; padding: 5px 0; font-size: 0.75rem; transition: background 0.2s;">
                                                     <i class="fas fa-cart-plus me-1"></i> Select Options
                                                 </a>
                                             @else
-                                                <a href="{{ route('login') }}" class="btn btn-sm w-100 mt-2" style="background-color: var(--primary-green); color: #fff; border-radius: 20px; text-decoration: none; display: inline-block; text-align: center;">
+                                                <a href="{{ route('login') }}" class="btn btn-sm w-100 mt-2" 
+                                                   style="background-color: var(--primary-green); color: #fff; border-radius: 20px; text-decoration: none; display: inline-block; text-align: center; padding: 5px 0; font-size: 0.75rem;">
                                                     <i class="fas fa-sign-in-alt me-1"></i> Login to Buy
                                                 </a>
                                             @endauth
@@ -273,26 +337,26 @@
 
         <!-- ===== ADVANTAGES SECTION (Full Width) ===== -->
         <section class="mt-5">
-            <div class="row g-4 text-center">
+            <div class="row g-4">
                 <div class="col-md-4">
-                    <div class="p-4" style="background: #f5f0e8; border-radius: 12px;">
+                    <div class="p-4 text-center" style="background: #f8f9fa; border-radius: 12px; height: 100%;">
                         <i class="fas fa-recycle fa-3x mb-3" style="color: var(--primary-green);"></i>
-                        <h5>Sustainable Materials</h5>
-                        <p class="mb-0">All products are made from biodegradable, compostable, and recyclable materials</p>
+                        <h5 style="font-size: 1rem; font-weight: 600;">Sustainable Materials</h5>
+                        <p class="mb-0 small" style="color: #6c757d; line-height: 1.6;">All products are made from biodegradable, compostable, and recyclable materials</p>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="p-4" style="background: #f5f0e8; border-radius: 12px;">
+                    <div class="p-4 text-center" style="background: #f8f9fa; border-radius: 12px; height: 100%;">
                         <i class="fas fa-clock fa-3x mb-3" style="color: var(--primary-green);"></i>
-                        <h5>Fast Response</h5>
-                        <p class="mb-0">Quotes and enquiries handled within 24 hours</p>
+                        <h5 style="font-size: 1rem; font-weight: 600;">Fast Response</h5>
+                        <p class="mb-0 small" style="color: #6c757d; line-height: 1.6;">Quotes and enquiries handled within 24 hours</p>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="p-4" style="background: #f5f0e8; border-radius: 12px;">
+                    <div class="p-4 text-center" style="background: #f8f9fa; border-radius: 12px; height: 100%;">
                         <i class="fas fa-handshake fa-3x mb-3" style="color: var(--primary-green);"></i>
-                        <h5>Custom Solutions</h5>
-                        <p class="mb-0">Custom packaging solutions for your business needs</p>
+                        <h5 style="font-size: 1rem; font-weight: 600;">Custom Solutions</h5>
+                        <p class="mb-0 small" style="color: #6c757d; line-height: 1.6;">Custom packaging solutions for your business needs</p>
                     </div>
                 </div>
             </div>
@@ -342,6 +406,22 @@
             }
             
             window.location.href = currentUrl.toString();
+        }
+
+        // ===== TOGGLE FUNCTION =====
+        function toggleSection(type) {
+            const extra = document.getElementById(type + '-extra');
+            const toggleText = document.getElementById(type + '-toggle-text');
+            
+            if (extra.style.display === 'none') {
+                extra.style.display = 'block';
+                toggleText.textContent = '− Show Less';
+            } else {
+                extra.style.display = 'none';
+                // Count remaining items
+                const items = extra.querySelectorAll('.form-check, .list-group-item');
+                toggleText.textContent = '+ Show More (' + items.length + ')';
+            }
         }
 
         // ===== FETCH CART COUNT =====
