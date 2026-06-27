@@ -25,10 +25,12 @@ class AuthenticatedSessionController extends Controller
         $user = Auth::user();
 
         if ($user->role === 1) {
-            return redirect()->intended(route('admin.dashboard'));
+            $request->session()->forget('url.intended');
+            return redirect()->route('admin.dashboard');
         }
 
-        return redirect()->intended(route('home'));
+        $request->session()->forget('url.intended');
+        return redirect()->route('home');
     }
 
     public function destroy(Request $request): RedirectResponse

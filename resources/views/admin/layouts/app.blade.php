@@ -217,6 +217,19 @@
                 @endif
             </a>
             
+            <!-- Feedbacks -->
+            <a href="{{ route('admin.feedbacks.index') }}" class="nav-link {{ request()->routeIs('admin.feedbacks.*') ? 'active' : '' }}">
+                <i class="fas fa-comment"></i> <span>Feedbacks</span>
+                @php
+                    $feedbackUnread = \App\Models\FeedbackReply::where('sender_type', 'user')
+                        ->where('is_read_by_admin', false)
+                        ->count();
+                @endphp
+                @if($feedbackUnread > 0)
+                    <span class="badge bg-danger rounded-pill ms-auto" style="font-size: 0.6rem;">{{ $feedbackUnread }}</span>
+                @endif
+            </a>
+
             <!-- Users Menu -->
             <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
                 <i class="fas fa-users"></i> <span>Users</span>

@@ -10,51 +10,44 @@ class HomeController extends Controller
 {
     public function index(Request $request)
     {
+        // Get search term from request
+        $searchTerm = $request->input('search');
+
         // Get all categories with product count
         $categories = Category::withCount('products')->get();
-        
-        $allProducts = Product::all();
-        
-        $query = Product::with('category');
 
-        // Filter by category
-        if ($request->has('category') && $request->category != '') {
-            $category = Category::where('slug', $request->category)->first();
-            if ($category) {
-                $query->where('category_id', $category->id);
-            }
+        // ===== SEARCH FUNCTIONALITY =====
+        if ($searchTerm) {
+            // Search products
+            $query = Product::with('category', 'variants')
+                ->where('name', 'LIKE', "%{$searchTerm}%")
+                ->orWhere('code', 'LIKE', "%{$searchTerm}%")
+                ->orWhere('description', 'LIKE', "%{$searchTerm}%")
+                ->orWhere('material', 'LIKE', "%{$searchTerm}%");
+
+            $products = $query->get();
+
+            // Get all products for filters (unfiltered)
+            $allProducts = Product::with('variants')->get();
+
+            // Get categories for sidebar (with products count)
+            $categories = Category::withCount('products')->get();
+        } else {
+            // No search: get all products
+            $query = Product::with('category', 'variants');
+            $products = $query->get();
+            $allProducts = Product::with('variants')->get();
         }
 
-        // Filter by material (multiple values)
-        if ($request->has('material') && $request->material != '') {
-            $materials = explode(',', $request->material);
-            $query->whereIn('material', $materials);
-        }
-
-        // Filter by size (multiple values)
-        if ($request->has('size') && $request->size != '') {
-            $sizes = explode(',', $request->size);
-            $query->whereIn('size', $sizes);
-        }
-
-        // Filter by price range
-        if ($request->has('price_min') && $request->price_min != '') {
-            $query->where('price', '>=', $request->price_min);
-        }
-        if ($request->has('price_max') && $request->price_max != '') {
-            $query->where('price', '<=', $request->price_max);
-        }
-
-        // Get filtered products
-        $products = $query->get();
-
+        // Calculate total products count for "All Products" badge
         $totalProductsCount = Product::count();
 
         return view('home', compact(
-            'categories', 
-            'products', 
-            'allProducts', 
-            'totalProductsCount'
+            'categories',
+            'products',
+            'allProducts',
+            'totalProductsCount',
+            'searchTerm'
         ));
     }
 }

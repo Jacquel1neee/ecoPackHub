@@ -33,8 +33,12 @@ class CartController extends Controller
     }
 
     // ===== AJAX: Get cart count =====
-    public function getCount()
+    public function getCount(Request $request)
     {
+        if (!$request->ajax()) {
+            return redirect()->route('home');
+        }
+
         if (!Auth::check()) {
             return response()->json(['count' => 0]);
         }

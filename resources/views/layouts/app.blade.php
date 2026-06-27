@@ -90,6 +90,11 @@
             background-color: #e8f5e9;
         }
 
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
         /* Footer */
         .footer {
             background-color: #1a1a1a;
@@ -114,6 +119,17 @@
             margin-top: 20px;
             font-size: 0.9rem;
         }
+
+        /* Scroll margin for fixed navbar */
+        #products {
+            scroll-margin-top: 80px;
+        }
+        #contact {
+            scroll-margin-top: 80px;
+        }
+        #about {
+            scroll-margin-top: 80px;
+        }
     </style>
 </head>
 <body>
@@ -129,16 +145,20 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="#products"><i class="fas fa-box me-1"></i>Products</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="fas fa-phone me-1"></i>Contact</a>
-                    </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ route('products.index') }}">
+                        <i class="fas fa-box me-1"></i>Products
+                    </a>
+                </li>
                     @auth
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('enquiry.history') }}">
                                 <i class="fas fa-envelope me-1"></i>My Enquiries
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('feedback.history') }}">
+                                <i class="fas fa-comment me-1"></i>My Feedbacks
                             </a>
                         </li>
                         @if(Auth::user()->role == 1)
@@ -149,10 +169,15 @@
                             </li>
                         @endif
                     @endauth
+
                 </ul>
-                <form class="d-flex me-3">
-                    <input class="form-control form-control-sm me-2" type="search" placeholder="Search products..." style="border-radius: 20px;">
-                    <button class="btn btn-outline-light btn-sm" type="submit"><i class="fas fa-search"></i></button>
+                <form action="{{ route('products.index') }}" method="GET" class="d-flex me-3">
+                    <input class="form-control form-control-sm me-2" type="search" name="search" 
+                        placeholder="Search products..." style="border-radius: 20px;"
+                        value="{{ request('search') }}">
+                    <button class="btn btn-outline-light btn-sm" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
                 </form>
                 @auth
                     <span class="text-white me-2">Hi, {{ Auth::user()->name }}</span>
@@ -195,9 +220,9 @@
                 <div class="col-md-2 mb-3">
                     <h5>Quick Links</h5>
                     <ul class="list-unstyled">
-                        <li><a href="#products">Products</a></li>
-                        <li><a href="#">About Us</a></li>
-                        <li><a href="#">Contact</a></li>
+                        <li><a href="{{ route('home') }}#products">Products</a></li>
+                        <li><a href="{{ route('pages.about') }}">About Us</a></li>
+                        <li><a href="{{ route('pages.contact') }}">Contact</a></li>
                     </ul>
                 </div>
                 <div class="col-md-3 mb-3">
@@ -205,7 +230,7 @@
                     <ul class="list-unstyled">
                         <li><i class="fas fa-phone me-2"></i>+6012-221 0442</li>
                         <li><i class="fas fa-envelope me-2"></i>hitech7785@gmail.com</li>
-                        <li><i class="fas fa-whatsapp me-2"></i><a href="#" target="_blank">WhatsApp Us</a></li>
+                        <li><i class="fas fa-whatsapp me-2"></i><a href="https://wa.me/60122210442" target="_blank">WhatsApp Us</a></li>
                     </ul>
                 </div>
                 <div class="col-md-3 mb-3">

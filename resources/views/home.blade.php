@@ -1,22 +1,60 @@
 @extends('layouts.app')
 
 @section('content')
-    <!-- ===== HERO SECTION ===== -->
-    <section class="hero">
-        <div class="container text-center">
-            <h1 class="mb-3">Sustainable Packaging Solutions</h1>
-            <p class="lead mb-4">Biodegradable &amp; paper-based packaging for food businesses</p>
-            <a href="#products" class="btn btn-primary-custom">
-                <i class="fas fa-box-open me-2"></i>Browse Products
-            </a>
+
+    <!-- ===== AI SUGGESTION SECTION ===== -->
+    <div class="mb-5">
+        <div class="card shadow-sm border-0 rounded-3" style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9);">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1 ms-3">
+                        <h5 class="fw-bold mb-1" style="color: var(--primary-green);">
+                            <i class="fas fa-lightbulb me-2"></i>Suggestion
+                        </h5>
+                        <p class="text-muted mb-2">Based on your browsing, we think you might like these products:</p>
+                    </div>
+                </div>
+                <div class="row g-3 mt-2" id="ai-suggestions">
+                    @php
+                        $aiProducts = $allProducts->random(min(4, $allProducts->count()));
+                    @endphp
+                    @if($aiProducts->count() > 0)
+                        @foreach($aiProducts as $product)
+                            <div class="col-lg-3 col-md-4 col-6">
+                                <div class="card product-card h-100 shadow-sm border-0 rounded-3">
+                                    <a href="{{ route('product.show', $product) }}" class="text-decoration-none d-block position-relative" style="overflow: hidden; background: #f8f9fa; height: 150px;">
+                                        @if($product->image_path)
+                                            <img src="{{ asset($product->image_path) }}" class="w-100 h-100" alt="{{ $product->name }}" style="object-fit: cover;">
+                                        @else
+                                            <img src="https://via.placeholder.com/300x200/2e7d32/ffffff?text={{ urlencode($product->code) }}" class="w-100 h-100" alt="{{ $product->name }}" style="object-fit: cover;">
+                                        @endif
+                                    </a>
+                                    <div class="card-body p-2">
+                                        <a href="{{ route('product.show', $product) }}" class="text-decoration-none text-dark">
+                                            <h6 class="card-title fw-semibold mb-0 text-truncate" style="font-size: 0.8rem;">{{ $product->name }}</h6>
+                                        </a>
+                                        <div class="d-flex justify-content-between align-items-center mt-1">
+                                            <span class="fw-bold" style="color: var(--primary-green); font-size: 0.85rem;">
+                                                RM {{ number_format($product->min_price, 2) }}
+                                            </span>
+                                            <small class="text-muted" style="font-size: 0.6rem;">{{ $product->variants->count() }} variants</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    @else
+                        <div class="col-12 text-center text-muted">
+                            <p class="mb-0">No products available for suggestions yet.</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
         </div>
-    </section>
+    </div>
 
     <div class="container">
-        <!-- ===== SHOPEE-STYLE: SIDEBAR FILTER + PRODUCTS ===== -->
-        <div class="row g-4">
-            
-            <!-- ===== LEFT SIDEBAR: CATEGORIES + FILTERS ===== -->
+        <div class="row g-4">            
             <div class="col-lg-3 col-md-4">
                 <!-- Categories Card -->
                 <div class="card shadow-sm border-0 rounded-3 mb-3">
