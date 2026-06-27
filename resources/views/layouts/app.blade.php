@@ -136,6 +136,11 @@
                         <a class="nav-link" href="#"><i class="fas fa-phone me-1"></i>Contact</a>
                     </li>
                     @auth
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('enquiry.history') }}">
+                                <i class="fas fa-envelope me-1"></i>My Enquiries
+                            </a>
+                        </li>
                         @if(Auth::user()->role == 1)
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ route('admin.dashboard') }}">
@@ -151,6 +156,10 @@
                 </form>
                 @auth
                     <span class="text-white me-2">Hi, {{ Auth::user()->name }}</span>
+                    <a href="{{ route('cart.index') }}" class="btn btn-outline-light btn-sm me-2" style="position: relative;">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span id="nav-cart-badge" class="badge bg-danger rounded-pill" style="position: absolute; top: -8px; right: -8px; font-size: 0.6rem; padding: 2px 6px; display: none;">0</span>
+                    </a>
                     <form method="POST" action="{{ route('logout') }}" class="d-inline">
                         @csrf
                         <button type="submit" class="btn btn-outline-light btn-sm">
@@ -213,5 +222,35 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- ===== CART COUNT JAVASCRIPT ===== -->
+    @auth
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                fetchCartCount();
+            });
+
+            function fetchCartCount() {
+                fetch('{{ route("cart.count") }}', {
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const badge = document.getElementById('nav-cart-badge');
+                    if (badge) {
+                        if (data.count > 0) {
+                            badge.textContent = data.count;
+                            badge.style.display = 'inline-block';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    }
+                })
+                .catch(error => console.error('Error fetching cart count:', error));
+            }
+        </script>
+    @endauth
 </body>
 </html>

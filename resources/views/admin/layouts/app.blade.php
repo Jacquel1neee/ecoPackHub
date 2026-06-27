@@ -198,10 +198,25 @@
             <a href="{{ route('admin.categories.index') }}" class="nav-link {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}">
                 <i class="fas fa-th-large"></i> <span>Categories</span>
             </a>
+            
             <!-- Orders -->
             <a href="{{ route('admin.orders.index') }}" class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
                 <i class="fas fa-truck"></i> <span>Orders</span>
             </a>
+            
+            <!-- ===== ENQUIRIES MENU with unread count ===== -->
+            <a href="{{ route('admin.enquiries.index') }}" class="nav-link {{ request()->routeIs('admin.enquiries.*') ? 'active' : '' }}">
+                <i class="fas fa-envelope"></i> <span>Enquiries</span>
+                @php
+                    $unreadCount = \App\Models\EnquiryReply::where('sender_type', 'user')
+                        ->where('is_read_by_admin', false)
+                        ->count();
+                @endphp
+                @if($unreadCount > 0)
+                    <span class="badge bg-danger rounded-pill ms-auto" style="font-size: 0.6rem;">{{ $unreadCount }}</span>
+                @endif
+            </a>
+            
             <!-- Users Menu -->
             <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
                 <i class="fas fa-users"></i> <span>Users</span>

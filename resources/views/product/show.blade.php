@@ -104,6 +104,13 @@
                         </button>
                     </form>
 
+                    <!-- ===== ENQUIRY BUTTON ===== -->
+                    <a href="{{ route('enquiry.create', $product) }}" class="btn w-100 mt-2" style="background-color: transparent; color: #6c757d; border: 2px solid #6c757d; border-radius: 30px; padding: 12px; font-size: 1rem; transition: all 0.3s; text-decoration: none; display: inline-block; text-align: center;" 
+                       onmouseover="this.style.backgroundColor='#6c757d'; this.style.color='#fff';" 
+                       onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6c757d';">
+                        <i class="fas fa-envelope me-2"></i> Enquire About This Product
+                    </a>
+
                     <!-- Back to Products -->
                     <a href="{{ route('home') }}#products" class="btn btn-outline-secondary w-100 mt-2" style="border-radius: 30px;">
                         <i class="fas fa-arrow-left me-2"></i> Back to Products

@@ -2,18 +2,21 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\EnquiryController;
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
-use App\Http\Controllers\CartController;
-use App\Http\Controllers\OrderController;
+use App\Http\Controllers\Admin\EnquiryController as AdminEnquiryController;
 use Illuminate\Support\Facades\Route;
 
 // ========== PUBLIC ROUTES ==========
 Route::get('/', [HomeController::class, 'index'])->name('home');
-Route::get('/product/{product}', [App\Http\Controllers\ProductController::class, 'show'])->name('product.show');
+Route::get('/product/{product}', [ProductController::class, 'show'])->name('product.show');
 
 // ========== AUTH ROUTES (Breeze) ==========
 Route::get('/dashboard', function () {
@@ -26,7 +29,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// ========== CART ROUTES (Protected - middleware handled in route) ==========
+// ========== CART ROUTES ==========
 Route::middleware(['auth'])->prefix('cart')->name('cart.')->group(function () {
     Route::get('/', [CartController::class, 'index'])->name('index');
     Route::get('/count', [CartController::class, 'getCount'])->name('count');
@@ -36,7 +39,7 @@ Route::middleware(['auth'])->prefix('cart')->name('cart.')->group(function () {
     Route::delete('/clear', [CartController::class, 'clear'])->name('clear');
 });
 
-// ========== ORDER ROUTES (Protected - middleware handled in route) ==========
+// ========== ORDER ROUTES ==========
 Route::middleware(['auth'])->group(function () {
     Route::get('/checkout', [OrderController::class, 'checkout'])->name('checkout');
     Route::post('/orders/place', [OrderController::class, 'placeOrder'])->name('orders.place');
@@ -44,10 +47,21 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
 });
 
-// ========== ADMIN ROUTES (Protected with admin middleware) ==========
+// ========== ENQUIRY ROUTES ==========
+Route::middleware(['auth'])->group(function () {
+    Route::get('/enquiry/product/{product}', [EnquiryController::class, 'create'])->name('enquiry.create');
+    Route::post('/enquiry', [EnquiryController::class, 'store'])->name('enquiry.store');
+    Route::get('/enquiry/success', [EnquiryController::class, 'success'])->name('enquiry.success');
+    Route::get('/enquiries', [EnquiryController::class, 'history'])->name('enquiry.history');
+    Route::get('/enquiry/{enquiry}', [EnquiryController::class, 'show'])->name('enquiry.show');
+    // User reply to enquiry (chat)
+    Route::post('/enquiry/{enquiry}/reply', [EnquiryController::class, 'userReply'])->name('enquiry.user.reply');
+});
+
+// ========== ADMIN ROUTES ==========
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    Route::resource('products', ProductController::class);
+    Route::resource('products', AdminProductController::class);
     Route::resource('categories', CategoryController::class);
     
     // User Management
@@ -58,6 +72,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Admin Order Management
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
     Route::patch('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.update-status');
+    
+    // Admin Enquiry Management
+    Route::get('/enquiries', [AdminEnquiryController::class, 'index'])->name('enquiries.index');
+    Route::get('/enquiries/{enquiry}', [AdminEnquiryController::class, 'show'])->name('enquiries.show');
+    Route::post('/enquiries/{enquiry}/reply', [AdminEnquiryController::class, 'reply'])->name('enquiries.reply');
+    Route::patch('/enquiries/{enquiry}/status', [AdminEnquiryController::class, 'updateStatus'])->name('enquiries.update-status');
+    Route::delete('/enquiries/{enquiry}', [AdminEnquiryController::class, 'destroy'])->name('enquiries.destroy');
 });
 
 require __DIR__.'/auth.php';
