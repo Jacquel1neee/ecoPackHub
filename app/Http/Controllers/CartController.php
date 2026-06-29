@@ -35,21 +35,14 @@ class CartController extends Controller
     // ===== AJAX: Get cart count =====
     public function getCount(Request $request)
     {
-        if (!$request->ajax()) {
-            return redirect()->route('home');
-        }
-
         if (!Auth::check()) {
             return response()->json(['count' => 0]);
         }
-        
+
         $cart = Cart::where('user_id', Auth::id())->first();
-        if (!$cart) {
-            return response()->json(['count' => 0]);
-        }
-        
-        $count = $cart->items()->sum('quantity');
-        return response()->json(['count' => $count]);
+        $count = $cart ? $cart->items()->sum('quantity') : 0;
+
+        return response()->json(['count' => (int) $count]);
     }
 
     // ===== AJAX: Add product variant to cart (returns JSON) =====

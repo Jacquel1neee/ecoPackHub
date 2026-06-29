@@ -287,6 +287,13 @@
         const badge = document.getElementById('cart-badge');
         if (badge) {
             badge.textContent = count;
+            badge.style.display = 'inline-block';
+        }
+
+        const navBadge = document.getElementById('nav-cart-badge');
+        if (navBadge) {
+            navBadge.textContent = count;
+            navBadge.style.display = count > 0 ? 'inline-block' : 'none';
         }
     }
 </script>

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Cart;
 use App\Models\Category;
 use App\Models\Product;
 
@@ -42,12 +44,19 @@ class HomeController extends Controller
         // Calculate total products count for "All Products" badge
         $totalProductsCount = Product::count();
 
+        $cartCount = 0;
+        if (Auth::check()) {
+            $cart = Cart::where('user_id', Auth::id())->first();
+            $cartCount = $cart ? $cart->items()->sum('quantity') : 0;
+        }
+
         return view('home', compact(
             'categories',
             'products',
             'allProducts',
             'totalProductsCount',
-            'searchTerm'
+            'searchTerm',
+            'cartCount'
         ));
     }
 }

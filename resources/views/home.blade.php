@@ -261,7 +261,7 @@
                         @auth
                             <a href="{{ route('cart.index') }}" class="btn btn-sm" style="background-color: var(--primary-green); color: #fff; border-radius: 20px;">
                                 <i class="fas fa-shopping-cart me-1"></i> View Cart
-                                <span id="cart-badge" class="badge bg-light text-dark ms-1 rounded-pill" style="font-size: 0.7rem;">0</span>
+                                <span id="cart-badge" class="badge bg-light text-dark ms-1 rounded-pill" style="font-size: 0.7rem;" data-cart-count="{{ $cartCount ?? 0 }}">{{ $cartCount ?? 0 }}</span>
                             </a>
                         @endauth
                     </div>
@@ -304,12 +304,12 @@
                                     
                                     <div class="card-body d-flex flex-column p-3">
                                         <a href="{{ route('product.show', $product) }}" class="text-decoration-none text-dark">
-                                            <h6 class="card-title fw-semibold mb-1" style="font-size: 0.9rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.4rem;">
+                                            <h6 class="card-title fw-semibold mb-1" style="font-size: 0.9rem; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.4rem;">
                                                 {{ $product->name }}
                                             </h6>
                                         </a>
                                         
-                                        <p class="card-text small text-muted mb-2" style="display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; min-height: 1.2rem;">
+                                        <p class="card-text small text-muted mb-2" style="display: -webkit-box; -webkit-line-clamp: 1; line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; min-height: 1.2rem;">
                                             {{ Str::limit($product->description, 40) }}
                                         </p>
                                         
@@ -456,31 +456,55 @@
                 toggleText.textContent = '− Show Less';
             } else {
                 extra.style.display = 'none';
-                // Count remaining items
                 const items = extra.querySelectorAll('.form-check, .list-group-item');
                 toggleText.textContent = '+ Show More (' + items.length + ')';
             }
         }
 
         // ===== FETCH CART COUNT =====
+        function updateCartBadges(count) {
+            const badge = document.getElementById('cart-badge');
+            if (badge) {
+                badge.textContent = count;
+                badge.style.display = 'inline-block';
+            }
+
+            const navBadge = document.getElementById('nav-cart-badge');
+            if (navBadge) {
+                navBadge.textContent = count;
+                navBadge.style.display = count > 0 ? 'inline-block' : 'none';
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
-            fetchCartCount();
+            const badge = document.getElementById('cart-badge');
+            const initialCartCount = badge ? Number(badge.dataset.cartCount || 0) : 0;
+
+            updateCartBadges(initialCartCount);
+            if (badge) {
+                fetchCartCount();
+            }
         });
 
         function fetchCartCount() {
             fetch('{{ route("cart.count") }}', {
                 headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
             })
             .then(response => response.json())
             .then(data => {
-                const badge = document.getElementById('cart-badge');
-                if (badge && data.count !== undefined) {
-                    badge.textContent = data.count;
+                if (data.count !== undefined) {
+                    updateCartBadges(Number(data.count || 0));
                 }
             })
             .catch(error => console.error('Error fetching cart count:', error));
+        }
+
+        function hideToast() {
+            document.getElementById('cart-toast').style.display = 'none';
         }
     </script>
 @endsection
