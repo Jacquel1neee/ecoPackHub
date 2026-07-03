@@ -10,7 +10,9 @@ class Product extends Model
 {
     protected $fillable = [
         'category_id', 'code', 'name', 'description', 
-        'material', 'image', 'image_path', 'product_group'
+        'material', 'image', 'image_path', 'image_path2', 
+        'image_path3', 'image_path4', 'image_path5', 
+        'image_path6', 'image_path7', 'product_group'
     ];
 
     public function category(): BelongsTo

@@ -15,10 +15,28 @@
         <div class="col-md-5">
             <div class="card shadow-sm border-0 rounded-3">
                 <div class="card-body p-3 text-center">
-                    @if($product->image_path)
-                        <img src="{{ asset($product->image_path) }}" alt="{{ $product->name }}" class="img-fluid" style="max-height: 400px; object-fit: contain; border-radius: 12px;">
+                    @php
+                        $productImages = [];
+                        foreach (['image_path', 'image_path2', 'image_path3', 'image_path4', 'image_path5', 'image_path6', 'image_path7'] as $imageField) {
+                            if ($product->{$imageField}) {
+                                $productImages[] = asset($product->{$imageField});
+                            }
+                        }
+                    @endphp
+
+                    @if(count($productImages) > 0)
+                        <div class="position-relative">
+                            <img id="product-image-slider" src="{{ $productImages[0] }}" alt="{{ $product->name }}" class="img-fluid" style="max-height: 400px; object-fit: contain; border-radius: 12px;">
+                            @if(count($productImages) > 1)
+                                <button id="prev-image-btn" type="button" class="btn btn-secondary position-absolute top-50 start-0 translate-middle-y" style="opacity: 0.8; border-radius: 50%; width: 40px; height: 40px;">&#8249;</button>
+                                <button id="next-image-btn" type="button" class="btn btn-secondary position-absolute top-50 end-0 translate-middle-y" style="opacity: 0.8; border-radius: 50%; width: 40px; height: 40px;">&#8250;</button>
+                            @endif
+                        </div>
+                        @if(count($productImages) > 1)
+                            <div id="image-dots" class="d-flex justify-content-center gap-2 mt-3"></div>
+                        @endif
                     @else
-                        <img src="https://via.placeholder.com/500x400/2e7d32/ffffff?text={{ urlencode($product->code) }}" alt="{{ $product->name }}" class="img-fluid" style="max-height: 400px; object-fit: contain; border-radius: 12px;">
+                        <img id="product-image-slider" src="https://via.placeholder.com/500x400/2e7d32/ffffff?text={{ urlencode($product->code) }}" alt="{{ $product->name }}" class="img-fluid" style="max-height: 400px; object-fit: contain; border-radius: 12px;">
                     @endif
                 </div>
             </div>
@@ -170,6 +188,80 @@
     const stockDisplay = document.getElementById('stock-display');
     const quantityInput = document.getElementById('quantity-input');
     const addToCartBtn = document.getElementById('add-to-cart-btn');
+    const productImageSlider = document.getElementById('product-image-slider');
+    const prevImageBtn = document.getElementById('prev-image-btn');
+    const nextImageBtn = document.getElementById('next-image-btn');
+    const imageDotsContainer = document.getElementById('image-dots');
+    const productImages = @json($productImages);
+    let currentProductImageIndex = 0;
+    let imageInterval = null;
+
+    function updateProductImage(index) {
+        if (!productImageSlider || productImages.length === 0) {
+            return;
+        }
+
+        currentProductImageIndex = index;
+        productImageSlider.src = productImages[currentProductImageIndex];
+        updateDots();
+        resetImageInterval();
+    }
+
+    function showPreviousImage() {
+        const nextIndex = (currentProductImageIndex - 1 + productImages.length) % productImages.length;
+        updateProductImage(nextIndex);
+    }
+
+    function showNextImage() {
+        const nextIndex = (currentProductImageIndex + 1) % productImages.length;
+        updateProductImage(nextIndex);
+    }
+
+    function updateDots() {
+        if (!imageDotsContainer) {
+            return;
+        }
+
+        imageDotsContainer.querySelectorAll('.image-dot').forEach((dot, dotIndex) => {
+            dot.classList.toggle('bg-primary', dotIndex === currentProductImageIndex);
+            dot.classList.toggle('bg-secondary', dotIndex !== currentProductImageIndex);
+        });
+    }
+
+    function resetImageInterval() {
+        if (!productImages || productImages.length <= 1) {
+            return;
+        }
+
+        if (imageInterval) {
+            clearInterval(imageInterval);
+        }
+
+        imageInterval = setInterval(showNextImage, 3000);
+    }
+
+    if (productImages.length > 1) {
+        if (prevImageBtn) {
+            prevImageBtn.addEventListener('click', showPreviousImage);
+        }
+        if (nextImageBtn) {
+            nextImageBtn.addEventListener('click', showNextImage);
+        }
+
+        if (imageDotsContainer) {
+            imageDotsContainer.innerHTML = productImages.map((_, dotIndex) => {
+                return `<button type="button" class="btn btn-sm image-dot ${dotIndex === 0 ? 'bg-primary' : 'bg-secondary'}" style="width: 12px; height: 12px; border-radius: 50%; padding: 0;"></button>`;
+            }).join('');
+
+            imageDotsContainer.querySelectorAll('.image-dot').forEach((dot, dotIndex) => {
+                dot.addEventListener('click', function() {
+                    updateProductImage(dotIndex);
+                });
+            });
+        }
+
+        resetImageInterval();
+    }
 
     // Update display when variant changes
     variantSelect.addEventListener('change', function() {
