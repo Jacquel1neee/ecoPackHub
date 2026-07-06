@@ -33,8 +33,8 @@
                                 <tr>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            @if($item->variant && $item->variant->product && $item->variant->product->image_path)
-                                                <img src="{{ asset($item->variant->product->image_path) }}" 
+                                            @if($item->variant && $item->variant->product && $item->variant->product->image_url)
+                                                <img src="{{ $item->variant->product->image_url }}"
                                                      style="width:40px;height:40px;object-fit:cover;border-radius:6px;margin-right:10px;">
                                             @endif
                                             <div>

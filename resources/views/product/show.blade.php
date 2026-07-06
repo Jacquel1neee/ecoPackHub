@@ -18,9 +18,14 @@
                     @php
                         $productImages = [];
                         foreach (['image_path', 'image_path2', 'image_path3', 'image_path4', 'image_path5', 'image_path6', 'image_path7'] as $imageField) {
-                            if ($product->{$imageField}) {
-                                $productImages[] = asset($product->{$imageField});
+                            $resolvedImage = $product->resolveImageUrl($product->{$imageField});
+                            if ($resolvedImage) {
+                                $productImages[] = $resolvedImage;
                             }
+                        }
+
+                        if (empty($productImages) && $product->image) {
+                            $productImages[] = $product->image_url;
                         }
                     @endphp
 
@@ -36,7 +41,7 @@
                             <div id="image-dots" class="d-flex justify-content-center gap-2 mt-3"></div>
                         @endif
                     @else
-                        <img id="product-image-slider" src="https://via.placeholder.com/500x400/2e7d32/ffffff?text={{ urlencode($product->code) }}" alt="{{ $product->name }}" class="img-fluid" style="max-height: 400px; object-fit: contain; border-radius: 12px;">
+                        <img id="product-image-slider" src="{{ asset('images/no-image.png') }}" alt="{{ $product->name }}" class="img-fluid" style="max-height: 400px; object-fit: contain; border-radius: 12px;">
                     @endif
                 </div>
             </div>
