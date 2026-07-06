@@ -11,56 +11,78 @@ use Illuminate\Support\Str;
 
 class OrderController extends Controller
 {
-    // Checkout page
+    /**
+     * Display checkout page
+     */
     public function checkout()
     {
+        // Get current user's cart
         $cart = Cart::where('user_id', Auth::id())->first();
+        
         if (!$cart || $cart->items->count() === 0) {
             return redirect()->route('cart.index')
                 ->with('error', 'Your cart is empty!');
         }
 
+        // Get cart items with variant and product details
         $items = $cart->items()->with('variant.product')->get();
+        
+        // Calculate total amount
         $total = $items->sum(function ($item) {
             return $item->quantity * ($item->variant->price ?? 0);
         });
 
+        // Return checkout view
         return view('order.checkout', compact('items', 'total'));
     }
 
-    // Place order
+    /**
+     * Place order - process and save order
+     */
     public function placeOrder(Request $request)
     {
+        // ===== 1. Validate request data =====
         $request->validate([
-            'shipping_address' => 'required|string|max:500',
+            'delivery_method' => 'required|in:shipping,selfpickup',
+            'shipping_address' => 'required_if:delivery_method,shipping|string|max:500',
             'phone' => 'required|string|max:20',
             'notes' => 'nullable|string|max:500'
         ]);
 
+        // ===== 2. Get user's cart =====
         $cart = Cart::where('user_id', Auth::id())->first();
+        
         if (!$cart || $cart->items->count() === 0) {
             return redirect()->route('cart.index')
                 ->with('error', 'Your cart is empty!');
         }
 
-        // 使用 variant 关系计算 total
+        // ===== 3. Calculate total amount =====
         $items = $cart->items()->with('variant')->get();
         $total = $items->sum(function ($item) {
             return $item->quantity * ($item->variant->price ?? 0);
         });
 
-        // Create order
+        // ===== 4. Handle shipping address =====
+        // If self pickup, auto-fill with store address; if shipping, use user's address
+        $shippingAddress = $request->delivery_method === 'shipping'
+            ? $request->shipping_address
+            : 'Self Pickup - EcoPack Hub Store, 123 Jalan Example, 43000 Kajang, Selangor';
+
+        // ===== 5. Create order =====
         $order = Order::create([
             'user_id' => Auth::id(),
             'order_number' => 'ECO-' . Str::upper(Str::random(8)),
             'total_amount' => $total,
             'status' => 'pending',
-            'shipping_address' => $request->shipping_address,
+            'payment_status' => 'pending',
+            'delivery_method' => $request->delivery_method,
+            'shipping_address' => $shippingAddress,
             'phone' => $request->phone,
             'notes' => $request->notes
         ]);
 
-        // Create order items
+        // ===== 6. Create order items =====
         foreach ($items as $item) {
             OrderItem::create([
                 'order_id' => $order->id,
@@ -70,14 +92,17 @@ class OrderController extends Controller
             ]);
         }
 
-        // Clear cart
+        // ===== 7. Clear cart =====
         $cart->items()->delete();
 
+        // ===== 8. Redirect to order details =====
         return redirect()->route('orders.show', $order)
             ->with('success', 'Order placed successfully! Order #: ' . $order->order_number);
     }
 
-    // View all user orders
+    /**
+     * Display list of user's orders
+     */
     public function index()
     {
         $orders = Order::where('user_id', Auth::id())
@@ -87,9 +112,12 @@ class OrderController extends Controller
         return view('order.index', compact('orders'));
     }
 
-    // View single order
+    /**
+     * Display single order details
+     */
     public function show(Order $order)
     {
+        // Authorization: user can only view their own orders, or if admin (role = 1)
         if ($order->user_id !== Auth::id() && Auth::user()->role !== 1) {
             abort(403);
         }

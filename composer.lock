@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "efc013d7b1ca50dea035fa69d50022c4",
+    "content-hash": "f5329a14662978f6a16609149511cba9",
     "packages": [
         {
             "name": "brick/math",
@@ -506,6 +506,70 @@
                 }
             ],
             "time": "2025-03-06T22:45:56+00:00"
+        },
+        {
+            "name": "ejoi8/malaysia-payment-gateway",
+            "version": "v2.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/ejoi8/malaysia-payment-gateway.git",
+                "reference": "6d50d26210d1733574d1d7766d99cc4220c2925a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ejoi8/malaysia-payment-gateway/zipball/6d50d26210d1733574d1d7766d99cc4220c2925a",
+                "reference": "6d50d26210d1733574d1d7766d99cc4220c2925a",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "orchestra/testbench": "^8.0|^9.0|^10.0|^11.0",
+                "pestphp/pest": "^2.0|^3.0",
+                "phpunit/phpunit": "^10.0|^11.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Ejoi8\\MalaysiaPaymentGateway\\PaymentGatewayServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Ejoi8\\MalaysiaPaymentGateway\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "ejoi8",
+                    "email": "ejoi8@example.com"
+                }
+            ],
+            "description": "Malaysian payment gateway integrations for Laravel (Chip, ToyyibPay, FPX) plus Stripe & PayPal",
+            "keywords": [
+                "Malaysia",
+                "chip",
+                "fpx",
+                "gateway",
+                "laravel",
+                "payment",
+                "paypal",
+                "stripe",
+                "toyyibpay"
+            ],
+            "support": {
+                "issues": "https://github.com/ejoi8/malaysia-payment-gateway/issues",
+                "source": "https://github.com/ejoi8/malaysia-payment-gateway/tree/v2.0.0"
+            },
+            "time": "2026-06-20T15:51:38+00:00"
         },
         {
             "name": "fruitcake/php-cors",
