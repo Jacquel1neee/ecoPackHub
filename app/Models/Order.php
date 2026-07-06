@@ -14,7 +14,8 @@ class Order extends Model
         'order_number', 
         'total_amount', 
         'status', 
-        'delivery_method',      // Delivery method: shipping or self pickup
+        'payment_status',        // 添加这一行
+        'delivery_method',       // Delivery method: shipping or self pickup
         'shipping_address', 
         'phone', 
         'notes'
@@ -25,6 +26,14 @@ class Order extends Model
      */
     const DELIVERY_SHIPPING = 'shipping';
     const DELIVERY_SELFPICKUP = 'selfpickup';
+
+    /**
+     * Payment status constants
+     */
+    const PAYMENT_PENDING = 'pending';
+    const PAYMENT_PAID = 'paid';
+    const PAYMENT_FAILED = 'failed';
+    const PAYMENT_REFUNDED = 'refunded';
 
     /**
      * Get delivery method label with icon
@@ -57,6 +66,32 @@ class Order extends Model
             'shipping' => 'fa-truck',
             'selfpickup' => 'fa-store',
         ][$this->delivery_method] ?? 'fa-box';
+    }
+
+    /**
+     * Get payment status label
+     */
+    public function getPaymentStatusLabelAttribute()
+    {
+        return [
+            'pending' => 'Pending',
+            'paid' => 'Paid',
+            'failed' => 'Failed',
+            'refunded' => 'Refunded',
+        ][$this->payment_status] ?? $this->payment_status;
+    }
+
+    /**
+     * Get payment status color
+     */
+    public function getPaymentStatusColorAttribute()
+    {
+        return [
+            'pending' => 'warning',
+            'paid' => 'success',
+            'failed' => 'danger',
+            'refunded' => 'info',
+        ][$this->payment_status] ?? 'secondary';
     }
 
     /**

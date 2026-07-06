@@ -16,7 +16,14 @@ return new class extends Migration
             if (!Schema::hasColumn('orders', 'delivery_method')) {
                 $table->enum('delivery_method', ['shipping', 'selfpickup'])
                       ->default('shipping')
-                      ->after('total_amount');
+                      ->after('status');
+            }
+            
+            // Add payment status field
+            if (!Schema::hasColumn('orders', 'payment_status')) {
+                $table->enum('payment_status', ['pending', 'paid', 'failed', 'refunded'])
+                      ->default('pending')
+                      ->after('delivery_method');
             }
             
             // Add phone number field if not exists
@@ -37,7 +44,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('orders', function (Blueprint $table) {
-            $table->dropColumn(['delivery_method', 'phone', 'notes']);
+            $table->dropColumn(['delivery_method', 'payment_status', 'phone', 'notes']);
         });
     }
 };
