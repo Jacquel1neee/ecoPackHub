@@ -84,13 +84,19 @@
                 </div>
                 <div class="card-body">
                     <p><strong>Status:</strong> <span class="badge bg-{{ $order->statusColor }}">{{ $order->statusLabel }}</span></p>
+                    <p><strong>Payment:</strong> <span class="badge bg-{{ $order->paymentStatusColor }}">{{ $order->paymentStatusLabel }}</span></p>
                     <p><strong>Order Date:</strong><br>{{ $order->created_at->format('d M Y, H:i') }}</p>
                     <p><strong>Shipping Address:</strong><br>{{ $order->shipping_address }}</p>
                     <p><strong>Phone:</strong><br>{{ $order->phone }}</p>
-                    @if($order->status == 'pending')
+                    @if($order->payment_status == 'pending')
                         <div class="alert alert-warning mt-2">
-                            <i class="fas fa-clock me-2"></i> Your order is being processed.
+                            <i class="fas fa-clock me-2"></i> Your order is waiting for payment.
                         </div>
+                        <a href="{{ $order->id ? url('/orders/' . $order->id . '/pay') : url('/orders/1/pay') }}"
+                           class="btn w-100 mt-2"
+                           style="background-color: var(--primary-green); color: #fff; border-radius: 20px;">
+                            <i class="fas fa-credit-card me-2"></i> Pay Now
+                        </a>
                     @elseif($order->status == 'completed')
                         <div class="alert alert-success mt-2">
                             <i class="fas fa-check-circle me-2"></i> Order completed!

@@ -7,6 +7,41 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## ToyyibPay Test Mode Setup
+
+This project now includes a ToyyibPay test-mode scaffold for the order checkout flow.
+
+### 1. Configure environment variables
+
+Add or update these values in your .env file:
+
+```env
+TOYYIBPAY_ENABLED=true
+TOYYIBPAY_MODE=test
+TOYYIBPAY_SECRET_KEY=your-toyyibpay-secret-key
+TOYYIBPAY_CATEGORY_CODE=your-category-code
+TOYYIBPAY_RETURN_URL=http://localhost/orders/{order}/payment-return
+TOYYIBPAY_CALLBACK_URL=http://localhost/payment/callback
+```
+
+### 2. Use the checkout flow
+
+When a user places an order, the app now creates the order first, then redirects to the payment return route. In test mode, the current scaffold will stop at the local redirect flow so you can verify the order lifecycle without making a real gateway call.
+
+### 3. Replace the scaffold with real ToyyibPay API calls
+
+The service in app/Services/ToyyibPayService.php is the integration point. Replace the placeholder response with a real HTTP request to ToyyibPay once you have your merchant credentials.
+
+### 4. Verify
+
+Run:
+
+```bash
+php artisan test --filter=ToyyibPayServiceTest
+```
+
+This confirms the payload builder is producing the expected bill parameters.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
