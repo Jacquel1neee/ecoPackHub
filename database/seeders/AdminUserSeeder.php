@@ -10,9 +10,10 @@ class AdminUserSeeder extends Seeder
 {
     public function run(): void
     {
-        User::create([
+        User::updateOrCreate([
+            'email' => 'admin@ecopackhub.com'
+        ], [
             'name' => 'admin',
-            'email' => 'admin@ecopackhub.com',
             'password' => Hash::make('admin'),
             'role' => 1,
         ]);

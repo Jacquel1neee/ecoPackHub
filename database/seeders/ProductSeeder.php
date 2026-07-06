@@ -231,13 +231,17 @@ class ProductSeeder extends Seeder
         foreach ($products as $productData) {
             $variants = $productData['variants'];
             unset($productData['variants']);
-            
-            $product = Product::create($productData);
-            
+
+            // Use code as unique key
+            $product = Product::updateOrCreate([
+                'code' => $productData['code']
+            ], $productData);
+
             foreach ($variants as $variant) {
-                ProductVariant::create([
+                ProductVariant::updateOrCreate([
                     'product_id' => $product->id,
-                    'size' => $variant['size'],
+                    'size' => $variant['size']
+                ],[
                     'packing_quantity' => $variant['packing_quantity'],
                     'price' => $variant['price'],
                     'stock' => $variant['stock'],

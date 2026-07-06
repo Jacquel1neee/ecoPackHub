@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
@@ -23,7 +24,7 @@ class UserController extends Controller
     public function toggleRole(User $user)
     {
         // Prevent admin from changing their own role (optional but recommended)
-        $authUserId = auth()->user()->id;
+        $authUserId = Auth::id();
         if ($user->getKey() === $authUserId) {
             return redirect()->route('admin.users.index')
                 ->with('error', 'You cannot change your own role.');
@@ -45,7 +46,7 @@ class UserController extends Controller
     public function destroy(User $user)
     {
         // Prevent admin from deleting themselves
-        $authUserId = auth()->user()->id;
+        $authUserId = Auth::id();
         if ($user->getKey() === $authUserId) {
             return redirect()->route('admin.users.index')
                 ->with('error', 'You cannot delete your own account.');

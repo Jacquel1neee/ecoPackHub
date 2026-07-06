@@ -230,9 +230,9 @@
                 @endif
             </a>
 
-            <!-- Users Menu -->
+            <!-- Hierarchy (replaces Users) -->
             <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
-                <i class="fas fa-users"></i> <span>Users</span>
+                <i class="fas fa-sitemap"></i> <span>Hierarchy</span>
             </a>
             
             <!-- View Site -->

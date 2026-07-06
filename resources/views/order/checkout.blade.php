@@ -21,7 +21,7 @@
                             <label class="form-label fw-bold">Delivery Method *</label>
                             <div class="d-flex gap-3">
                                 
-                                <!-- Shipping 选项 -->
+                                <!-- Shipping option -->
                                 <div class="form-check flex-fill p-3 border rounded-3 delivery-option" 
                                      id="shipping-option"
                                      style="cursor: pointer;" 
@@ -39,7 +39,7 @@
                                     <div class="small text-muted mt-1">Deliver to your address</div>
                                 </div>
 
-                                <!-- Self Pickup 选项 -->
+                                <!-- Self Pickup option -->
                                 <div class="form-check flex-fill p-3 border rounded-3 delivery-option" 
                                      id="selfpickup-option"
                                      style="cursor: pointer;" 
@@ -58,7 +58,7 @@
                             </div>
                         </div>
 
-                        <!-- 用户信息 -->
+                        <!-- User information -->
                         <div class="mb-3">
                             <label class="form-label">Full Name</label>
                             <input type="text" class="form-control" value="{{ Auth::user()->name }}" disabled>
@@ -146,10 +146,10 @@
 
 <script>
 /**
- * 选择配送方式并更新样式
+ * Select delivery method and update styles
  */
 function selectDeliveryMethod(method) {
-    // ===== 获取所有元素 =====
+    // ===== Get all elements =====
     const shippingOption = document.getElementById('shipping-option');
     const selfpickupOption = document.getElementById('selfpickup-option');
     const shippingRadio = document.getElementById('shipping');
@@ -160,74 +160,74 @@ function selectDeliveryMethod(method) {
     const hiddenAddressInput = document.querySelector('input[name="shipping_address"][type="hidden"]');
     const addressLabel = document.querySelector('#shipping-address-section .form-label');
 
-    // ===== 移除所有选项的选中样式 =====
+    // ===== Remove selection style from all options =====
     shippingOption.classList.remove('selected');
     selfpickupOption.classList.remove('selected');
 
     if (method === 'shipping') {
-        // ===== Shipping 模式 =====
-        // 1. 选中 Shipping 按钮
+        // ===== Shipping mode =====
+        // 1. Select Shipping radio
         shippingRadio.checked = true;
-        shippingOption.classList.add('selected'); // 添加绿色高亮
+        shippingOption.classList.add('selected'); // add green highlight
         
-        // 2. 显示地址输入框
+        // 2. Show shipping address input
         shippingSection.style.display = 'block';
         selfpickupSection.style.display = 'none';
         
-        // 3. 启用地址输入框
+        // 3. Enable address textarea
         shippingAddressTextarea.disabled = false;
         shippingAddressTextarea.required = true;
         shippingAddressTextarea.style.display = 'block';
         
-        // 4. 隐藏隐藏输入
+        // 4. Hide hidden input
         hiddenAddressInput.style.display = 'none';
         hiddenAddressInput.disabled = true;
         
-        // 5. 显示标签
+        // 5. Show label
         addressLabel.style.display = 'block';
         
     } else {
-        // ===== Self Pickup 模式 =====
-        // 1. 选中 Self Pickup 按钮
+        // ===== Self Pickup mode =====
+        // 1. Select Self Pickup radio
         selfpickupRadio.checked = true;
-        selfpickupOption.classList.add('selected'); // 添加绿色高亮
+        selfpickupOption.classList.add('selected'); // add green highlight
         
-        // 2. 显示自取信息
+        // 2. Show self pickup info
         shippingSection.style.display = 'none';
         selfpickupSection.style.display = 'block';
         
-        // 3. 禁用地址输入框
+        // 3. Disable address textarea
         shippingAddressTextarea.disabled = true;
         shippingAddressTextarea.required = false;
         shippingAddressTextarea.style.display = 'none';
         
-        // 4. 启用隐藏输入并填充地址
+        // 4. Enable hidden input and populate address
         hiddenAddressInput.style.display = 'block';
         hiddenAddressInput.disabled = false;
         hiddenAddressInput.value = 'Self Pickup - EcoPack Hub Store';
         
-        // 5. 隐藏标签
+        // 5. Hide label
         addressLabel.style.display = 'none';
     }
 }
 
-// ===== 页面加载时默认选中 Shipping =====
+// ===== Default to Shipping on page load =====
 document.addEventListener('DOMContentLoaded', function() {
-    // 默认选中 Shipping
+    // Default to Shipping
     selectDeliveryMethod('shipping');
 });
 </script>
 
 <style>
-/* ===== 配送方式选项卡片样式 ===== */
-.delivery-option {
-    transition: all 0.3s ease; /* 平滑过渡效果 */
+/* ===== Delivery option card styles ===== */
+ .delivery-option {
+    transition: all 0.3s ease; /* smooth transition */
     border-width: 2px !important;
     border-color: #dee2e6 !important;
     background-color: #ffffff;
 }
 
-/* 悬停效果 */
+/* Hover effect */
 .delivery-option:hover {
     background-color: #f8f9fa;
     border-color: #a8d5ba !important;
@@ -235,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function() {
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-/* 选中效果 - 绿色高亮 */
+/* Selected effect - green highlight */
 .delivery-option.selected {
     background-color: #e8f5e9 !important;
     border-color: var(--primary-green, #2e7d32) !important;
@@ -243,23 +243,23 @@ document.addEventListener('DOMContentLoaded', function() {
     box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.2);
 }
 
-/* 选中后的图标颜色变化 */
+/* Icon color change after selection */
 .delivery-option.selected i {
     color: var(--primary-green, #2e7d32) !important;
 }
 
-/* 选中后的文字颜色 */
+/* Text color after selection */
 .delivery-option.selected .form-check-label {
     color: var(--primary-green, #2e7d32) !important;
 }
 
-/* 选中的单选按钮样式 */
+/* Selected radio button style */
 .delivery-option.selected .form-check-input:checked {
     background-color: var(--primary-green, #2e7d32);
     border-color: var(--primary-green, #2e7d32);
 }
 
-/* 卡片点击区域 */
+/* Card clickable area */
 .delivery-option .form-check-label {
     width: 100%;
     cursor: pointer;
@@ -269,8 +269,8 @@ document.addEventListener('DOMContentLoaded', function() {
     cursor: pointer;
 }
 
-/* 禁用状态 */
-.delivery-option:active {
+/* Active state */
+ .delivery-option:active {
     transform: scale(0.98);
 }
 </style>

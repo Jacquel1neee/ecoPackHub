@@ -18,7 +18,7 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
                     </x-nav-link>
-                    <!-- 添加 Admin 链接（仅登录用户可见） -->
+                    <!-- Add Admin link (visible to logged-in users only) -->
                     @auth
                         @if(Auth::user()->is_admin ?? false)
                             <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.*')">

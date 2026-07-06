@@ -67,7 +67,7 @@ class EnquiryController extends Controller
 
         $enquiry->status = 'replied';
         $enquiry->last_reply_at = now();
-        $enquiry->is_read = false; // 标记为未读，用户端会有通知
+        $enquiry->is_read = false; // mark as unread so the user will receive a notification
         $enquiry->save();
 
         return redirect()->route('admin.enquiries.show', $enquiry)

@@ -185,6 +185,18 @@
                         <i class="fas fa-shopping-cart"></i>
                         <span id="nav-cart-badge" class="badge bg-danger rounded-pill" style="position: absolute; top: -8px; right: -8px; font-size: 0.6rem; padding: 2px 6px; display: none;">0</span>
                     </a>
+
+                    {{-- Notifications bell --}}
+                    @auth
+                        <div class="d-inline-block ms-1">
+                            @php
+                                echo view('partials.notifications_dropdown', [
+                                    'notifications' => App\Models\UserNotification::where('notifiable_type', get_class(Auth::user()))->where('notifiable_id', Auth::id())->orderByDesc('created_at')->limit(20)->get(),
+                                    'unreadCount' => App\Models\UserNotification::where('notifiable_type', get_class(Auth::user()))->where('notifiable_id', Auth::id())->whereNull('read_at')->count(),
+                                ]);
+                            @endphp
+                        </div>
+                    @endauth
                     <form method="POST" action="{{ route('logout') }}" class="d-inline">
                         @csrf
                         <button type="submit" class="btn btn-outline-light btn-sm">

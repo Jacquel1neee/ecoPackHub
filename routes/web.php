@@ -85,8 +85,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Categories
     Route::resource('categories', CategoryController::class);
 
-    // User Management
-    Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+    // User Management (index replaced by hierarchy view)
+    Route::get('/users', [App\Http\Controllers\Admin\HierarchyController::class, 'index'])->name('users.index');
     Route::patch('/users/{user}/toggle-role', [AdminUserController::class, 'toggleRole'])->name('users.toggle-role');
     Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
 
@@ -107,6 +107,29 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/feedbacks/{feedback}/reply', [AdminFeedbackController::class, 'reply'])->name('feedbacks.reply');
     Route::patch('/feedbacks/{feedback}/status', [AdminFeedbackController::class, 'updateStatus'])->name('feedbacks.update-status');
     Route::delete('/feedbacks/{feedback}', [AdminFeedbackController::class, 'destroy'])->name('feedbacks.destroy');
+
+    // Admin Hierarchy Management
+    Route::get('/hierarchy', [App\Http\Controllers\Admin\HierarchyController::class, 'index'])->name('hierarchy.index');
+    Route::post('/hierarchy/promote', [App\Http\Controllers\Admin\HierarchyController::class, 'sendPromoteRequest'])->name('hierarchy.send-promote');
+    Route::patch('/hierarchy/promote/{request}/accept', [App\Http\Controllers\Admin\HierarchyController::class, 'acceptPromoteRequest'])->name('hierarchy.accept-promote');
+    Route::patch('/hierarchy/promote/{request}/reject', [App\Http\Controllers\Admin\HierarchyController::class, 'rejectPromoteRequest'])->name('hierarchy.reject-promote');
+    Route::delete('/hierarchy/promote/{request}', [App\Http\Controllers\Admin\HierarchyController::class, 'cancelPromoteRequest'])->name('hierarchy.cancel-promote');
+    
+    
+
+    Route::post('/hierarchy/unlink', [App\Http\Controllers\Admin\HierarchyController::class, 'sendUnlinkRequest'])->name('hierarchy.send-unlink');
+    Route::patch('/hierarchy/unlink/{request}/accept', [App\Http\Controllers\Admin\HierarchyController::class, 'acceptUnlinkRequest'])->name('hierarchy.accept-unlink');
+    Route::patch('/hierarchy/unlink/{request}/reject', [App\Http\Controllers\Admin\HierarchyController::class, 'rejectUnlinkRequest'])->name('hierarchy.reject-unlink');
+    Route::delete('/hierarchy/unlink/{request}', [App\Http\Controllers\Admin\HierarchyController::class, 'cancelUnlinkRequest'])->name('hierarchy.cancel-unlink');
+});
+
+// Notifications (available to all authenticated users)
+Route::middleware(['auth'])->group(function () {
+    Route::get('notifications', [App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('notifications/{id}/read', [App\Http\Controllers\NotificationController::class, 'markRead'])->name('notifications.read');
+    Route::post('notifications/read-all', [App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('notifications.readAll');
+    Route::post('notifications/{id}/promote/accept', [App\Http\Controllers\NotificationController::class, 'promoteAccept'])->name('notifications.promote.accept');
+    Route::post('notifications/{id}/promote/reject', [App\Http\Controllers\NotificationController::class, 'promoteReject'])->name('notifications.promote.reject');
 });
 
 require __DIR__.'/auth.php';
