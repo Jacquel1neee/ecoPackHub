@@ -17,8 +17,8 @@
     <div class="card-body">
         <div class="row">
             <div class="col-md-4 text-center">
-                @if($product->image_path)
-                    <img src="{{ asset($product->image_path) }}" style="max-width:100%;max-height:300px;border-radius:12px;">
+                @if($product->image_url)
+                    <img src="{{ $product->image_url }}" style="max-width:100%;max-height:300px;border-radius:12px;">
                 @else
                     <div class="bg-light p-5 rounded">
                         <i class="fas fa-image fa-4x text-muted"></i>

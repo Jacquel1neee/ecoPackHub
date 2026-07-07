@@ -34,10 +34,10 @@
                             <div class="col-xl-3 col-lg-4 col-md-6 col-6">
                                 <div class="card product-card h-100 shadow-sm border-0 rounded-3 overflow-hidden">
                                     <a href="{{ route('product.show', $product) }}" class="text-decoration-none d-block position-relative" style="overflow: hidden; background: #f8f9fa; height: 180px;">
-                                        @if($product->image_path)
-                                            <img src="{{ asset($product->image_path) }}" class="w-100 h-100" alt="{{ $product->name }}" style="object-fit: cover;">
+                                        @if($product->image_url)
+                                            <img src="{{ $product->image_url }}" class="w-100 h-100" alt="{{ $product->name }}" style="object-fit: cover;">
                                         @else
-                                            <img src="https://via.placeholder.com/300x200/2e7d32/ffffff?text={{ urlencode($product->code) }}" class="w-100 h-100" alt="{{ $product->name }}" style="object-fit: cover;">
+                                            <img src="{{ asset('images/no-image.png') }}" class="w-100 h-100" alt="{{ $product->name }}" style="object-fit: cover;">
                                         @endif
                                         <span class="position-absolute top-0 end-0 m-2 badge bg-dark bg-opacity-75 small px-2 py-1" style="font-size: 0.6rem;">
                                             {{ $product->code }}

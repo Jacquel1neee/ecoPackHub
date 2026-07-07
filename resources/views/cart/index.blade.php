@@ -42,8 +42,8 @@
                                         <tr>
                                             <td>
                                                 <div class="d-flex align-items-center">
-                                                    @if($item->variant && $item->variant->product && $item->variant->product->image_path)
-                                                        <img src="{{ asset($item->variant->product->image_path) }}" 
+                                                    @if($item->variant && $item->variant->product && $item->variant->product->image_url)
+                                                        <img src="{{ $item->variant->product->image_url }}"
                                                              style="width:50px;height:50px;object-fit:cover;border-radius:8px;margin-right:12px;">
                                                     @else
                                                         <div style="width:50px;height:50px;background:#f0f0f0;border-radius:8px;margin-right:12px;display:flex;align-items:center;justify-content:center;color:#999;">

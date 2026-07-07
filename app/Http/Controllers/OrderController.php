@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Cart;
+use App\Services\ToyyibPayService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
@@ -39,7 +40,7 @@ class OrderController extends Controller
     /**
      * Place order - process and save order
      */
-    public function placeOrder(Request $request)
+    public function placeOrder(Request $request, ToyyibPayService $toyyibPayService)
     {
         // ===== 1. Validate request data =====
         $request->validate([
@@ -102,7 +103,7 @@ class OrderController extends Controller
         // ===== 8. Clear cart =====
         $cart->items()->delete();
 
-        // ===== 9. Redirect to order details =====
+        // ===== 8. Redirect to order details =====
         return redirect()->route('orders.show', $order)
             ->with('success', 'Order placed successfully! Order #: ' . $order->order_number);
     }
@@ -131,5 +132,91 @@ class OrderController extends Controller
 
         $order->load('items.variant.product');
         return view('order.show', compact('order'));
+    }
+
+    public function pay(Order $order, ToyyibPayService $toyyibPayService)
+    {
+        if ($order->user_id !== Auth::id() && Auth::user()->role !== 1) {
+            abort(403);
+        }
+
+        if ($order->payment_status === Order::PAYMENT_PAID) {
+            return redirect()->route('orders.show', ['order' => $order->id])
+                ->with('info', 'This order has already been paid.');
+        }
+
+        $paymentResult = $toyyibPayService->createBill($order);
+
+        if (($paymentResult['success'] ?? false) && ! empty($paymentResult['redirect_url'])) {
+            $message = ($paymentResult['mode'] ?? 'real') === 'real'
+                ? 'You will be redirected to ToyyibPay to complete your payment.'
+                : 'Payment flow started with the local fallback.';
+
+            return redirect($paymentResult['redirect_url'])
+                ->with('success', $message);
+        }
+
+        return redirect()->route('orders.show', ['order' => $order->id])
+            ->with('error', $paymentResult['message'] ?? 'Unable to start ToyyibPay payment right now.');
+    }
+
+    public function completeMockPayment(Order $order)
+    {
+        if ($order->user_id !== Auth::id() && Auth::user()->role !== 1) {
+            abort(403);
+        }
+
+        $order->update([
+            'payment_status' => Order::PAYMENT_PAID,
+            'status' => 'processing',
+        ]);
+
+        return redirect()->route('orders.show', ['order' => $order->id])
+            ->with('success', 'Mock payment completed successfully.');
+    }
+
+    public function paymentReturn(Order $order, Request $request)
+    {
+        if ($this->isSuccessfulPayment($request)) {
+            $order->update([
+                'payment_status' => Order::PAYMENT_PAID,
+                'status' => 'processing',
+            ]);
+
+            return redirect()->route('orders.show', ['order' => $order->id])
+                ->with('success', 'Payment completed successfully.');
+        }
+
+        $order->update(['payment_status' => Order::PAYMENT_FAILED]);
+
+        return redirect()->route('orders.show', $order)
+            ->with('error', 'Payment was not completed.');
+    }
+
+    public function paymentCallback(Request $request)
+    {
+        $orderNumber = $request->input('order_id')
+            ?: $request->input('billExternalReferenceNo')
+            ?: $request->input('order_number');
+
+        if ($orderNumber) {
+            $order = Order::where('order_number', $orderNumber)->first();
+            if ($order && $this->isSuccessfulPayment($request)) {
+                $order->update([
+                    'payment_status' => Order::PAYMENT_PAID,
+                    'status' => 'processing',
+                ]);
+            }
+        }
+
+        return response()->json(['status' => 'OK']);
+    }
+
+    private function isSuccessfulPayment(Request $request): bool
+    {
+        $status = (string) $request->input('status_id', $request->input('status', ''));
+        $normalized = strtolower(trim($status));
+
+        return in_array($normalized, ['1', 'success', 'paid', 'completed', 'true'], true);
     }
 }

@@ -27,8 +27,8 @@
                     @forelse($products as $product)
                         <tr>
                             <td>
-                                @if($product->image_path)
-                                    <img src="{{ asset($product->image_path) }}" class="product-img-thumb" alt="{{ $product->name }}">
+                                @if($product->image_url)
+                                    <img src="{{ $product->image_url }}" class="product-img-thumb" alt="{{ $product->name }}">
                                 @else
                                     <div class="product-img-thumb bg-light d-flex align-items-center justify-content-center text-muted">
                                         <i class="fas fa-image"></i>

@@ -152,6 +152,11 @@
                 </li>
                     @auth
                         <li class="nav-item">
+                            <a class="nav-link" href="{{ route('orders.index') }}">
+                                <i class="fas fa-receipt me-1"></i>My Orders
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="{{ route('enquiry.history') }}">
                                 <i class="fas fa-envelope me-1"></i>My Enquiries
                             </a>

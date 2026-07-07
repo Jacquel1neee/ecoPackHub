@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Product extends Model
 {
@@ -28,6 +29,73 @@ class Product extends Model
     public function sales(): HasMany
     {
         return $this->hasMany(Sale::class);
+    }
+
+    public function resolveImageUrl(?string $value): string
+    {
+        if (!$value) {
+            return '';
+        }
+
+        if (Str::startsWith($value, ['http://', 'https://'])) {
+            $placeholderMatch = null;
+            if (preg_match('/text=([^&]+)/i', $value, $matches)) {
+                $placeholderMatch = $matches[1];
+            }
+
+            if ($placeholderMatch) {
+                $normalizedName = str_replace([' ', '-'], ['_', '_'], $placeholderMatch);
+                $normalizedName = strtoupper($normalizedName);
+                $candidateNames = array_unique([
+                    $placeholderMatch,
+                    $normalizedName,
+                    $normalizedName . '.png',
+                    str_replace(' ', '_', $placeholderMatch),
+                    str_replace('-', '_', $placeholderMatch),
+                    str_replace([' ', '-'], ['_', '_'], $placeholderMatch),
+                ]);
+
+                foreach ($candidateNames as $candidateName) {
+                    $candidatePath = dirname(__DIR__, 2) . '/public/images/' . $candidateName . '.png';
+                    if (file_exists($candidatePath)) {
+                        return '/images/' . $candidateName . '.png';
+                    }
+                }
+            }
+
+            return $value;
+        }
+
+        if (Str::startsWith($value, '/')) {
+            return $value;
+        }
+
+        if (Str::endsWith($value, ['.png', '.jpg', '.jpeg', '.gif', '.webp'])) {
+            $filename = basename($value);
+            $candidatePath = dirname(__DIR__, 2) . '/public/images/' . $filename;
+            if (file_exists($candidatePath)) {
+                return '/images/' . $filename;
+            }
+        }
+
+        if (Str::startsWith($value, 'images/')) {
+            return '/' . $value;
+        }
+
+        if (Str::contains($value, '/images/')) {
+            return '/' . ltrim($value, '/');
+        }
+
+        if (Str::contains($value, 'public/')) {
+            return '/' . Str::replaceFirst('public/', '', $value);
+        }
+
+        return asset($value);
+    }
+
+    public function getImageUrlAttribute(): string
+    {
+        return $this->resolveImageUrl($this->image_path ?: $this->image);
     }
 
     public function getMinPriceAttribute()

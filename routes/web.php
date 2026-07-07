@@ -56,7 +56,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/orders/place', [OrderController::class, 'placeOrder'])->name('orders.place');
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::get('/orders/{order}/pay', [OrderController::class, 'pay'])->name('orders.pay');
+    Route::post('/orders/{order}/pay/mock', [OrderController::class, 'completeMockPayment'])->name('orders.pay.mock');
+    Route::get('/orders/{order}/payment-return', [OrderController::class, 'paymentReturn'])->name('orders.payment-return');
 });
+
+Route::post('/payment/callback', [OrderController::class, 'paymentCallback'])->name('payment.callback');
 
 // ========== ENQUIRY ROUTES ==========
 Route::middleware(['auth'])->group(function () {

@@ -19,7 +19,7 @@ class ProductSeeder extends Seeder
                 'description' => 'Biodegradable corn starch lunch box with 2 compartments for rice and side dishes',
                 'material' => 'Corn Starch',
                 'product_group' => 'lunch-box',
-                'image' => 'https://via.placeholder.com/300x200/2e7d32/ffffff?text=HIT-CTR-001',
+                'image' => 'HIT_CTR_001.png',
                 'variants' => [
                     ['size' => '600ml', 'packing_quantity' => '400 pcs/ctn', 'price' => 45.00, 'stock' => 100],
                 ]
@@ -31,7 +31,7 @@ class ProductSeeder extends Seeder
                 'description' => 'Small biodegradable sauce cup for dips and condiments',
                 'material' => 'Corn Starch',
                 'product_group' => 'sauce-cup',
-                'image' => 'https://via.placeholder.com/300x200/2e7d32/ffffff?text=HIT-CTR-002',
+                'image' => 'HIT_CTR_002.png',
                 'variants' => [
                     ['size' => '4oz', 'packing_quantity' => '1000 pcs/ctn', 'price' => 30.00, 'stock' => 200],
                     ['size' => '2oz', 'packing_quantity' => '1000 pcs/ctn', 'price' => 25.00, 'stock' => 200],
@@ -44,7 +44,7 @@ class ProductSeeder extends Seeder
                 'description' => 'Biodegradable bowl made from corn starch, suitable for various meals',
                 'material' => 'Corn Starch',
                 'product_group' => 'bowl',
-                'image' => 'https://via.placeholder.com/300x200/2e7d32/ffffff?text=HIT-CTR-004',
+                'image' => 'HIT_CTR_004.png',
                 'variants' => [
                     ['size' => '280ml', 'packing_quantity' => '300 pcs/ctn', 'price' => 40.00, 'stock' => 150],
                     ['size' => '400ml', 'packing_quantity' => '300 pcs/ctn', 'price' => 48.00, 'stock' => 150],
@@ -59,7 +59,7 @@ class ProductSeeder extends Seeder
                 'description' => 'Biodegradable lunch box with multiple compartments for meal separation',
                 'material' => 'Corn Starch',
                 'product_group' => 'multi-lunch-box',
-                'image' => 'https://via.placeholder.com/300x200/2e7d32/ffffff?text=HIT-CTR-008',
+                'image' => 'HIT_CTR_008.png',
                 'variants' => [
                     ['size' => '3 Compartment', 'packing_quantity' => '200 pcs/ctn', 'price' => 58.00, 'stock' => 80],
                     ['size' => '4 Compartment', 'packing_quantity' => '200 pcs/ctn', 'price' => 60.00, 'stock' => 80],
@@ -72,7 +72,7 @@ class ProductSeeder extends Seeder
                 'description' => 'Leak-proof sauce container with tight-seal lid',
                 'material' => 'Corn Starch',
                 'product_group' => 'sauce-container',
-                'image' => 'https://via.placeholder.com/300x200/2e7d32/ffffff?text=HIT-CTR-010',
+                'image' => 'HIT_CTR_010.png',
                 'variants' => [
                     ['size' => 'Standard', 'packing_quantity' => '3000 pcs/ctn', 'price' => 65.00, 'stock' => 50],
                 ]
@@ -84,7 +84,7 @@ class ProductSeeder extends Seeder
                 'description' => 'Single compartment lunch box for takeaways',
                 'material' => 'Corn Starch',
                 'product_group' => 'single-lunch-box',
-                'image' => 'https://via.placeholder.com/300x200/2e7d32/ffffff?text=HIT-CTR-011',
+                'image' => 'HIT_CTR_011.png',
                 'variants' => [
                     ['size' => '500ml', 'packing_quantity' => '300 pcs/ctn', 'price' => 42.00, 'stock' => 100],
                 ]
@@ -96,7 +96,7 @@ class ProductSeeder extends Seeder
                 'description' => 'Oval shaped bagasse box with biodegradable lid',
                 'material' => 'Bagasse',
                 'product_group' => 'bagasse-box',
-                'image' => 'https://via.placeholder.com/300x200/2e7d32/ffffff?text=HIT-CTR-012',
+                'image' => 'HIT_CTR_012.png',
                 'variants' => [
                     ['size' => '1000ml', 'packing_quantity' => '500 pcs/ctn', 'price' => 70.00, 'stock' => 60],
                 ]
@@ -108,7 +108,7 @@ class ProductSeeder extends Seeder
                 'description' => 'Brown kraft paper bowl with matching paper lid, fully compostable',
                 'material' => 'Paper',
                 'product_group' => 'paper-bowl',
-                'image' => 'https://via.placeholder.com/300x200/8B7355/ffffff?text=HIT-CTR-013',
+                'image' => 'HIT_CTR_013.png',
                 'variants' => [
                     ['size' => '8oz', 'packing_quantity' => '500 pcs/ctn', 'price' => 35.00, 'stock' => 120],
                     ['size' => '26oz', 'packing_quantity' => '500 pcs/ctn', 'price' => 50.00, 'stock' => 120],
@@ -121,7 +121,7 @@ class ProductSeeder extends Seeder
                 'description' => 'Biodegradable plate made from corn starch',
                 'material' => 'Corn Starch',
                 'product_group' => 'plate',
-                'image' => 'https://via.placeholder.com/300x200/2e7d32/ffffff?text=HIT-CTR-015',
+                'image' => 'HIT_CTR_015.png',
                 'variants' => [
                     ['size' => '9inch', 'packing_quantity' => '1000 pcs/ctn', 'price' => 40.00, 'stock' => 100],
                     ['size' => '10inch', 'packing_quantity' => '500 pcs/ctn', 'price' => 45.00, 'stock' => 100],
@@ -136,7 +136,7 @@ class ProductSeeder extends Seeder
                 'description' => 'Natural wooden stirrer perfect for coffee and tea',
                 'material' => 'Wood',
                 'product_group' => 'stirrer',
-                'image' => 'https://via.placeholder.com/300x200/D2691E/ffffff?text=HIT-UTS-001',
+                'image' => 'HIT_UTS_001.png',
                 'variants' => [
                     ['size' => 'Standard', 'packing_quantity' => '10000 pcs/ctn', 'price' => 20.00, 'stock' => 50],
                 ]
@@ -148,7 +148,7 @@ class ProductSeeder extends Seeder
                 'description' => 'Biodegradable cutlery made from corn starch',
                 'material' => 'Corn Starch',
                 'product_group' => 'cutlery',
-                'image' => 'https://via.placeholder.com/300x200/2e7d32/ffffff?text=HIT-UTS-002',
+                'image' => 'HIT_UTS_002.png',
                 'variants' => [
                     ['size' => 'Spoon', 'packing_quantity' => '1000 pcs/ctn', 'price' => 28.00, 'stock' => 150],
                     ['size' => 'Fork', 'packing_quantity' => '1000 pcs/ctn', 'price' => 28.00, 'stock' => 150],
@@ -161,7 +161,7 @@ class ProductSeeder extends Seeder
                 'description' => 'Natural wooden cutlery, durable and eco-friendly',
                 'material' => 'Wood',
                 'product_group' => 'wooden-cutlery',
-                'image' => 'https://via.placeholder.com/300x200/D2691E/ffffff?text=HIT-UTS-004',
+                'image' => 'HIT_UTS_004.png',
                 'variants' => [
                     ['size' => 'Spoon', 'packing_quantity' => '2500 pcs/ctn', 'price' => 32.00, 'stock' => 100],
                     ['size' => 'Fork', 'packing_quantity' => '2500 pcs/ctn', 'price' => 32.00, 'stock' => 100],
@@ -174,7 +174,7 @@ class ProductSeeder extends Seeder
                 'description' => 'Complete cutlery set with spoon, fork and knife',
                 'material' => 'Wood/Corn Starch',
                 'product_group' => 'cutlery-set',
-                'image' => 'https://via.placeholder.com/300x200/2e7d32/ffffff?text=HIT-UTS-006',
+                'image' => 'HIT_UTS_006.png',
                 'variants' => [
                     ['size' => 'Standard', 'packing_quantity' => '500 sets/ctn', 'price' => 55.00, 'stock' => 80],
                 ]
@@ -188,7 +188,7 @@ class ProductSeeder extends Seeder
                 'description' => 'Biodegradable singlet bag for groceries and retail',
                 'material' => 'Biodegradable Plastic',
                 'product_group' => 'bio-singlet',
-                'image' => 'https://via.placeholder.com/300x200/4A7040/ffffff?text=HIT-CB-001',
+                'image' => 'HIT_CB_001.png',
                 'variants' => [
                     ['size' => '12 x 12"', 'packing_quantity' => '50 pcs/pkt', 'price' => 8.00, 'stock' => 200],
                     ['size' => '15 x 15"', 'packing_quantity' => '50 pcs/pkt', 'price' => 10.00, 'stock' => 200],
@@ -205,7 +205,7 @@ class ProductSeeder extends Seeder
                 'description' => 'Brown kraft paper bag with self-opening base',
                 'material' => 'Kraft Paper',
                 'product_group' => 'paper-bag-sos',
-                'image' => 'https://via.placeholder.com/300x200/8B7355/ffffff?text=HIT-CB-007',
+                'image' => 'HIT_CB_007.png',
                 'variants' => [
                     ['size' => '127 x 240 x 77mm', 'packing_quantity' => '1200 pcs/ctn', 'price' => 75.00, 'stock' => 100],
                     ['size' => '147 x 273 x 92mm', 'packing_quantity' => '1200 pcs/ctn', 'price' => 85.00, 'stock' => 100],
@@ -220,7 +220,7 @@ class ProductSeeder extends Seeder
                 'description' => 'Brown kraft paper bag with various handle options',
                 'material' => 'Kraft Paper',
                 'product_group' => 'paper-bag-handle',
-                'image' => 'https://via.placeholder.com/300x200/8B7355/ffffff?text=HIT-CB-010',
+                'image' => 'HIT_CB_010.png',
                 'variants' => [
                     ['size' => '220 x 205 x 115mm (PP Cord)', 'packing_quantity' => '50 pcs/ctn', 'price' => 30.00, 'stock' => 80],
                     ['size' => '280 x 280 x 150mm (Die Cut)', 'packing_quantity' => '500 pcs/ctn', 'price' => 65.00, 'stock' => 80],
