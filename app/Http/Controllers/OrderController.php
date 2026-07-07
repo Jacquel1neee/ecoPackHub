@@ -27,7 +27,7 @@ class OrderController extends Controller
         // Get cart items with variant and product details
         $items = $cart->items()->with('variant.product')->get();
         
-        // Calculate total amount
+        // Calculate subtotal
         $total = $items->sum(function ($item) {
             return $item->quantity * ($item->variant->price ?? 0);
         });
@@ -57,23 +57,30 @@ class OrderController extends Controller
                 ->with('error', 'Your cart is empty!');
         }
 
-        // ===== 3. Calculate total amount =====
+        // ===== 3. Calculate subtotal =====
         $items = $cart->items()->with('variant')->get();
-        $total = $items->sum(function ($item) {
+        $subtotal = $items->sum(function ($item) {
             return $item->quantity * ($item->variant->price ?? 0);
         });
 
-        // ===== 4. Handle shipping address =====
+        // ===== 4. Calculate shipping fee =====
+        // Shipping: RM 5.00, Self Pickup: FREE (RM 0.00)
+        $shippingFee = $request->delivery_method === 'shipping' ? 5.00 : 0.00;
+        $total = $subtotal + $shippingFee;
+
+        // ===== 5. Handle shipping address =====
         // If self pickup, auto-fill with store address; if shipping, use user's address
         $shippingAddress = $request->delivery_method === 'shipping'
             ? $request->shipping_address
             : 'Self Pickup - EcoPack Hub Store, 123 Jalan Example, 43000 Kajang, Selangor';
 
-        // ===== 5. Create order =====
+        // ===== 6. Create order =====
         $order = Order::create([
             'user_id' => Auth::id(),
             'order_number' => 'ECO-' . Str::upper(Str::random(8)),
-            'total_amount' => $total,
+            'subtotal' => $subtotal,              // Subtotal before shipping
+            'shipping_fee' => $shippingFee,       // Shipping fee amount
+            'total_amount' => $total,             // Grand total
             'status' => 'pending',
             'payment_status' => 'pending',
             'delivery_method' => $request->delivery_method,
@@ -82,7 +89,7 @@ class OrderController extends Controller
             'notes' => $request->notes
         ]);
 
-        // ===== 6. Create order items =====
+        // ===== 7. Create order items =====
         foreach ($items as $item) {
             OrderItem::create([
                 'order_id' => $order->id,
@@ -92,10 +99,10 @@ class OrderController extends Controller
             ]);
         }
 
-        // ===== 7. Clear cart =====
+        // ===== 8. Clear cart =====
         $cart->items()->delete();
 
-        // ===== 8. Redirect to order details =====
+        // ===== 9. Redirect to order details =====
         return redirect()->route('orders.show', $order)
             ->with('success', 'Order placed successfully! Order #: ' . $order->order_number);
     }

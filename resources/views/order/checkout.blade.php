@@ -7,21 +7,22 @@
     </h2>
 
     <div class="row g-4">
+        <!-- Left Column: Shipping Details Form -->
         <div class="col-lg-7">
             <div class="card shadow-sm border-0 rounded-3">
                 <div class="card-header bg-white py-3 fw-bold">
                     <i class="fas fa-shipping-fast me-2"></i>Shipping Details
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('orders.place') }}" method="POST">
+                    <form action="{{ route('orders.place') }}" method="POST" id="checkoutForm">
                         @csrf
                         
-                        <!-- Delivery Method Selection -->
+                        <!-- ===== Delivery Method Selection ===== -->
                         <div class="mb-4">
                             <label class="form-label fw-bold">Delivery Method *</label>
                             <div class="d-flex gap-3">
                                 
-                                <!-- Shipping option -->
+                                <!-- Option 1: Shipping (with delivery fee) -->
                                 <div class="form-check flex-fill p-3 border rounded-3 delivery-option" 
                                      id="shipping-option"
                                      style="cursor: pointer;" 
@@ -35,11 +36,12 @@
                                     <label class="form-check-label fw-bold" for="shipping" style="cursor: pointer;">
                                         <i class="fas fa-truck me-2" style="color: var(--primary-green);"></i>
                                         Shipping
+                                        <span class="badge bg-warning ms-2">+ RM 5.00</span>
                                     </label>
-                                    <div class="small text-muted mt-1">Deliver to your address</div>
+                                    <div class="small text-muted mt-1">Deliver to your address (1-3 business days)</div>
                                 </div>
 
-                                <!-- Self Pickup option -->
+                                <!-- Option 2: Self Pickup (FREE) -->
                                 <div class="form-check flex-fill p-3 border rounded-3 delivery-option" 
                                      id="selfpickup-option"
                                      style="cursor: pointer;" 
@@ -52,13 +54,14 @@
                                     <label class="form-check-label fw-bold" for="selfpickup" style="cursor: pointer;">
                                         <i class="fas fa-store me-2" style="color: var(--primary-green);"></i>
                                         Self Pickup
+                                        <span class="badge bg-success ms-2">FREE</span>
                                     </label>
                                     <div class="small text-muted mt-1">Pick up from our store</div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- User information -->
+                        <!-- ===== User Information (Read-only) ===== -->
                         <div class="mb-3">
                             <label class="form-label">Full Name</label>
                             <input type="text" class="form-control" value="{{ Auth::user()->name }}" disabled>
@@ -74,7 +77,7 @@
                             @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         
-                        <!-- Shipping Address -->
+                        <!-- ===== Shipping Address (visible only for shipping) ===== -->
                         <div id="shipping-address-section">
                             <div class="mb-3">
                                 <label class="form-label">Shipping Address *</label>
@@ -84,7 +87,7 @@
                             </div>
                         </div>
 
-                        <!-- Self Pickup Info -->
+                        <!-- ===== Self Pickup Info (visible only for self pickup) ===== -->
                         <div id="selfpickup-section" style="display: none;">
                             <div class="alert alert-success" style="background-color: #d4edda; border-color: #c3e6cb; color: #155724;">
                                 <i class="fas fa-store me-2"></i>
@@ -97,13 +100,17 @@
                                     ⏰ Operating Hours: 10:00 AM - 8:00 PM (Daily)
                                 </p>
                             </div>
+                            <!-- Hidden input: auto-fill address for self pickup -->
                             <input type="hidden" name="shipping_address" value="Self Pickup - EcoPack Hub Store">
                         </div>
 
+                        <!-- ===== Order Notes (Optional) ===== -->
                         <div class="mb-3">
                             <label class="form-label">Order Notes (Optional)</label>
                             <textarea name="notes" rows="2" class="form-control" placeholder="Any special instructions...">{{ old('notes') }}</textarea>
                         </div>
+                        
+                        <!-- ===== Submit Button ===== -->
                         <button type="submit" class="btn w-100" style="background-color: var(--primary-green); color: #fff; border-radius: 20px; padding: 12px;">
                             <i class="fas fa-check-circle me-2"></i>Place Order
                         </button>
@@ -112,12 +119,14 @@
             </div>
         </div>
 
+        <!-- ===== Right Column: Order Summary ===== -->
         <div class="col-lg-5">
             <div class="card shadow-sm border-0 rounded-3">
                 <div class="card-header bg-white py-3 fw-bold">
                     <i class="fas fa-shopping-bag me-2"></i>Order Summary
                 </div>
                 <div class="card-body">
+                    <!-- Loop through cart items -->
                     @foreach($items as $item)
                         <div class="d-flex justify-content-between mb-2">
                             <span>
@@ -130,11 +139,31 @@
                             <span>RM {{ number_format($item->quantity * ($item->variant->price ?? 0), 2) }}</span>
                         </div>
                     @endforeach
+                    
                     <hr>
+                    
+                    <!-- Subtotal -->
+                    <div class="d-flex justify-content-between">
+                        <span>Subtotal</span>
+                        <span>RM {{ number_format($total, 2) }}</span>
+                    </div>
+                    
+                    <!-- Shipping Fee (dynamically updated) -->
+                    <div class="d-flex justify-content-between mt-2" id="shipping-fee-row">
+                        <span>Shipping Fee</span>
+                        <span id="shipping-fee-amount">RM 5.00</span>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Grand Total -->
                     <div class="d-flex justify-content-between fw-bold">
                         <span>Total</span>
-                        <span style="color: var(--primary-green); font-size: 1.3rem;">RM {{ number_format($total, 2) }}</span>
+                        <span style="color: var(--primary-green); font-size: 1.3rem;" id="total-amount">
+                            RM {{ number_format($total + 5.00, 2) }}
+                        </span>
                     </div>
+                    
                     <a href="{{ route('cart.index') }}" class="btn btn-outline-secondary w-100 mt-3">
                         <i class="fas fa-arrow-left me-1"></i> Back to Cart
                     </a>
@@ -144,12 +173,18 @@
     </div>
 </div>
 
+<!-- ===== JavaScript: Toggle delivery method and update prices ===== -->
 <script>
+// Shipping fee constant
+const SHIPPING_FEE = 5.00;
+const SUBTOTAL = {{ $total }};
+
 /**
- * Select delivery method and update styles
+ * Select delivery method and update UI
+ * @param {string} method - 'shipping' or 'selfpickup'
  */
 function selectDeliveryMethod(method) {
-    // ===== Get all elements =====
+    // Get DOM elements
     const shippingOption = document.getElementById('shipping-option');
     const selfpickupOption = document.getElementById('selfpickup-option');
     const shippingRadio = document.getElementById('shipping');
@@ -159,83 +194,97 @@ function selectDeliveryMethod(method) {
     const shippingAddressTextarea = document.querySelector('textarea[name="shipping_address"]');
     const hiddenAddressInput = document.querySelector('input[name="shipping_address"][type="hidden"]');
     const addressLabel = document.querySelector('#shipping-address-section .form-label');
+    
+    // Price display elements
+    const shippingFeeAmount = document.getElementById('shipping-fee-amount');
+    const totalAmount = document.getElementById('total-amount');
 
-    // ===== Remove selection style from all options =====
+    // Remove selected styles from all options
     shippingOption.classList.remove('selected');
     selfpickupOption.classList.remove('selected');
 
     if (method === 'shipping') {
-        // ===== Shipping mode =====
-        // 1. Select Shipping radio
+        // ===== SHIPPING MODE =====
         shippingRadio.checked = true;
-        shippingOption.classList.add('selected'); // add green highlight
+        shippingOption.classList.add('selected');
         
-        // 2. Show shipping address input
+        // Show shipping address, hide self pickup
         shippingSection.style.display = 'block';
         selfpickupSection.style.display = 'none';
         
-        // 3. Enable address textarea
+        // Enable shipping address textarea
         shippingAddressTextarea.disabled = false;
         shippingAddressTextarea.required = true;
         shippingAddressTextarea.style.display = 'block';
         
-        // 4. Hide hidden input
+        // Hide hidden input
         hiddenAddressInput.style.display = 'none';
         hiddenAddressInput.disabled = true;
         
-        // 5. Show label
+        // Show address label
         addressLabel.style.display = 'block';
         
-    } else {
-        // ===== Self Pickup mode =====
-        // 1. Select Self Pickup radio
-        selfpickupRadio.checked = true;
-        selfpickupOption.classList.add('selected'); // add green highlight
+        // ===== Update prices (add shipping fee) =====
+        const totalWithShipping = SUBTOTAL + SHIPPING_FEE;
+        shippingFeeAmount.textContent = 'RM ' + SHIPPING_FEE.toFixed(2);
+        totalAmount.textContent = 'RM ' + totalWithShipping.toFixed(2);
         
-        // 2. Show self pickup info
+    } else {
+        // ===== SELF PICKUP MODE =====
+        selfpickupRadio.checked = true;
+        selfpickupOption.classList.add('selected');
+        
+        // Show self pickup, hide shipping address
         shippingSection.style.display = 'none';
         selfpickupSection.style.display = 'block';
         
-        // 3. Disable address textarea
+        // Disable shipping address textarea
         shippingAddressTextarea.disabled = true;
         shippingAddressTextarea.required = false;
         shippingAddressTextarea.style.display = 'none';
         
-        // 4. Enable hidden input and populate address
+        // Show hidden input with auto-filled address
         hiddenAddressInput.style.display = 'block';
         hiddenAddressInput.disabled = false;
         hiddenAddressInput.value = 'Self Pickup - EcoPack Hub Store';
         
-        // 5. Hide label
+        // Hide address label
         addressLabel.style.display = 'none';
+        
+        // ===== Update prices (FREE shipping) =====
+        shippingFeeAmount.textContent = 'FREE';
+        totalAmount.textContent = 'RM ' + SUBTOTAL.toFixed(2);
     }
 }
 
-// ===== Default to Shipping on page load =====
+// ===== Initialize on page load =====
 document.addEventListener('DOMContentLoaded', function() {
-    // Default to Shipping
     selectDeliveryMethod('shipping');
+});
+
+// ===== Hover effects for delivery options =====
+document.querySelectorAll('.delivery-option').forEach(option => {
+    option.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-2px)';
+        this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+    });
+    option.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0)';
+        this.style.boxShadow = 'none';
+    });
 });
 </script>
 
 <style>
-/* ===== Delivery option card styles ===== */
- .delivery-option {
-    transition: all 0.3s ease; /* smooth transition */
+/* Delivery option card styles */
+.delivery-option {
+    transition: all 0.3s ease;
     border-width: 2px !important;
     border-color: #dee2e6 !important;
     background-color: #ffffff;
 }
 
-/* Hover effect */
-.delivery-option:hover {
-    background-color: #f8f9fa;
-    border-color: #a8d5ba !important;
-    transform: translateY(-2px); /* 轻微上浮 */
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-/* Selected effect - green highlight */
+/* Selected state */
 .delivery-option.selected {
     background-color: #e8f5e9 !important;
     border-color: var(--primary-green, #2e7d32) !important;
@@ -243,36 +292,20 @@ document.addEventListener('DOMContentLoaded', function() {
     box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.2);
 }
 
-/* Icon color change after selection */
+/* Selected icon color */
 .delivery-option.selected i {
     color: var(--primary-green, #2e7d32) !important;
 }
 
-/* Text color after selection */
+/* Selected label color */
 .delivery-option.selected .form-check-label {
     color: var(--primary-green, #2e7d32) !important;
 }
 
-/* Selected radio button style */
+/* Selected radio button */
 .delivery-option.selected .form-check-input:checked {
     background-color: var(--primary-green, #2e7d32);
     border-color: var(--primary-green, #2e7d32);
 }
-
-/* Card clickable area */
-.delivery-option .form-check-label {
-    width: 100%;
-    cursor: pointer;
-}
-
-.delivery-option .form-check-input {
-    cursor: pointer;
-}
-
-/* Active state */
- .delivery-option:active {
-    transform: scale(0.98);
-}
 </style>
-
 @endsection

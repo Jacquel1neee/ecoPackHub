@@ -9,13 +9,18 @@ use App\Models\OrderItem;
 
 class Order extends Model
 {
+    /**
+     * The attributes that are mass assignable.
+     */
     protected $fillable = [
         'user_id', 
         'order_number', 
-        'total_amount', 
-        'status', 
-        'payment_status',        // 添加这一行
-        'delivery_method',       // Delivery method: shipping or self pickup
+        'subtotal',          // Subtotal before shipping
+        'shipping_fee',      // Shipping fee amount
+        'total_amount',      // Grand total (subtotal + shipping_fee)
+        'status',
+        'payment_status',
+        'delivery_method',   // shipping or selfpickup
         'shipping_address', 
         'phone', 
         'notes'
@@ -26,14 +31,6 @@ class Order extends Model
      */
     const DELIVERY_SHIPPING = 'shipping';
     const DELIVERY_SELFPICKUP = 'selfpickup';
-
-    /**
-     * Payment status constants
-     */
-    const PAYMENT_PENDING = 'pending';
-    const PAYMENT_PAID = 'paid';
-    const PAYMENT_FAILED = 'failed';
-    const PAYMENT_REFUNDED = 'refunded';
 
     /**
      * Get delivery method label with icon
@@ -69,29 +66,14 @@ class Order extends Model
     }
 
     /**
-     * Get payment status label
+     * Get formatted shipping fee with currency
      */
-    public function getPaymentStatusLabelAttribute()
+    public function getShippingFeeFormattedAttribute()
     {
-        return [
-            'pending' => 'Pending',
-            'paid' => 'Paid',
-            'failed' => 'Failed',
-            'refunded' => 'Refunded',
-        ][$this->payment_status] ?? $this->payment_status;
-    }
-
-    /**
-     * Get payment status color
-     */
-    public function getPaymentStatusColorAttribute()
-    {
-        return [
-            'pending' => 'warning',
-            'paid' => 'success',
-            'failed' => 'danger',
-            'refunded' => 'info',
-        ][$this->payment_status] ?? 'secondary';
+        if ($this->shipping_fee > 0) {
+            return 'RM ' . number_format($this->shipping_fee, 2);
+        }
+        return 'FREE';
     }
 
     /**
