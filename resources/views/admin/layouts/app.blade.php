@@ -199,12 +199,17 @@
                 <i class="fas fa-th-large"></i> <span>Categories</span>
             </a>
             
-            <!-- Orders -->
-            <a href="{{ route('admin.orders.index') }}" class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
-                <i class="fas fa-truck"></i> <span>Orders</span>
+            <!-- ===== VENDORS ===== -->
+            <a href="{{ route('admin.vendors.index') }}" class="nav-link {{ request()->routeIs('admin.vendors.*') ? 'active' : '' }}">
+                <i class="fas fa-truck"></i> <span>Vendors</span>
             </a>
             
-            <!-- ===== ENQUIRIES MENU with unread count ===== -->
+            <!-- Orders -->
+            <a href="{{ route('admin.orders.index') }}" class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
+                <i class="fas fa-shopping-cart"></i> <span>Orders</span>
+            </a>
+            
+            <!-- Enquiries -->
             <a href="{{ route('admin.enquiries.index') }}" class="nav-link {{ request()->routeIs('admin.enquiries.*') ? 'active' : '' }}">
                 <i class="fas fa-envelope"></i> <span>Enquiries</span>
                 @php
@@ -230,7 +235,7 @@
                 @endif
             </a>
 
-            <!-- Hierarchy (replaces Users) -->
+            <!-- Hierarchy (Users) -->
             <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
                 <i class="fas fa-sitemap"></i> <span>Hierarchy</span>
             </a>

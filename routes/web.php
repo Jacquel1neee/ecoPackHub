@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\EnquiryController as AdminEnquiryController;
 use App\Http\Controllers\Admin\CategoryController as CategoryController;
 use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
+use App\Http\Controllers\Admin\VendorController as AdminVendorController; // 👈 新增
 use App\Http\Controllers\PageController;
 use Illuminate\Support\Facades\Route;
 
@@ -90,6 +91,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Categories
     Route::resource('categories', CategoryController::class);
 
+    // ===== VENDORS =====
+    Route::resource('vendors', AdminVendorController::class);
+
     // User Management (index replaced by hierarchy view)
     Route::get('/users', [App\Http\Controllers\Admin\HierarchyController::class, 'index'])->name('users.index');
     Route::patch('/users/{user}/toggle-role', [AdminUserController::class, 'toggleRole'])->name('users.toggle-role');
@@ -120,8 +124,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::patch('/hierarchy/promote/{request}/reject', [App\Http\Controllers\Admin\HierarchyController::class, 'rejectPromoteRequest'])->name('hierarchy.reject-promote');
     Route::delete('/hierarchy/promote/{request}', [App\Http\Controllers\Admin\HierarchyController::class, 'cancelPromoteRequest'])->name('hierarchy.cancel-promote');
     
-    
-
     Route::post('/hierarchy/unlink', [App\Http\Controllers\Admin\HierarchyController::class, 'sendUnlinkRequest'])->name('hierarchy.send-unlink');
     Route::patch('/hierarchy/unlink/{request}/accept', [App\Http\Controllers\Admin\HierarchyController::class, 'acceptUnlinkRequest'])->name('hierarchy.accept-unlink');
     Route::patch('/hierarchy/unlink/{request}/reject', [App\Http\Controllers\Admin\HierarchyController::class, 'rejectUnlinkRequest'])->name('hierarchy.reject-unlink');

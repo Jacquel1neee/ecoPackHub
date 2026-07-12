@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
 
 class Product extends Model
@@ -16,20 +17,87 @@ class Product extends Model
         'image_path6', 'image_path7', 'product_group'
     ];
 
+    /**
+     * Category relationship
+     */
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
     }
 
+    /**
+     * Variants relationship
+     */
     public function variants(): HasMany
     {
         return $this->hasMany(ProductVariant::class);
     }
 
+    /**
+     * Sales relationship
+     */
     public function sales(): HasMany
     {
         return $this->hasMany(Sale::class);
     }
+
+    /**
+     * Vendors relationship (many-to-many with pivot)
+     */
+    public function vendors(): BelongsToMany
+    {
+        return $this->belongsToMany(Vendor::class, 'product_vendor')
+                    ->withPivot('price', 'is_preferred')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Get the preferred vendor for this product
+     */
+    public function getPreferredVendorAttribute()
+    {
+        return $this->vendors()->wherePivot('is_preferred', true)->first();
+    }
+
+    /**
+     * Get vendor prices as array
+     */
+    public function getVendorPricesAttribute(): array
+    {
+        return $this->vendors->pluck('pivot.price', 'name')->toArray();
+    }
+
+    /**
+     * Get vendor price list formatted
+     */
+    public function getVendorPriceListAttribute(): string
+    {
+        $list = [];
+        foreach ($this->vendors as $vendor) {
+            $price = number_format($vendor->pivot->price, 2);
+            $preferred = $vendor->pivot->is_preferred ? ' ★' : '';
+            $list[] = $vendor->name . ': RM ' . $price . $preferred;
+        }
+        return implode(' | ', $list);
+    }
+
+    /**
+     * Get the minimum vendor price
+     */
+    public function getMinVendorPriceAttribute()
+    {
+        return $this->vendors->min('pivot.price');
+    }
+
+    /**
+     * Get the maximum vendor price
+     */
+    public function getMaxVendorPriceAttribute()
+    {
+        return $this->vendors->max('pivot.price');
+    }
+
+    // ===== Image Handling (Existing Methods) =====
 
     public function resolveImageUrl(?string $value): string
     {
