@@ -191,7 +191,6 @@
         container.appendChild(newVariant);
         variantIndex++;
 
-        // Show all remove buttons
         document.querySelectorAll('.remove-variant').forEach(function(btn) {
             btn.style.display = 'block';
         });
@@ -257,7 +256,6 @@
         container.appendChild(newVendor);
         vendorIndex++;
 
-        // Show all remove buttons
         document.querySelectorAll('.remove-vendor').forEach(function(btn) {
             btn.style.display = 'block';
         });
