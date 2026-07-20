@@ -43,9 +43,9 @@
                                 <div class="card product-card h-100 shadow-sm border-0 rounded-3">
                                     <a href="{{ route('product.show', $product) }}" class="text-decoration-none d-block position-relative" style="overflow: hidden; background: #f8f9fa; height: 150px;">
                                         @if($product->image_url)
-                                            <img src="{{ $product->image_url }}" class="w-100 h-100" alt="{{ $product->name }}" style="object-fit: cover;">
+                                            <img src="{{ $product->image_url }}" class="w-100 h-100" alt="{{ $product->name }}" style="object-fit: contain; object-position: center;">
                                         @else
-                                            <img src="{{ asset('images/no-image.png') }}" class="w-100 h-100" alt="{{ $product->name }}" style="object-fit: cover;">
+                                            <img src="{{ asset('images/no-image.png') }}" class="w-100 h-100" alt="{{ $product->name }}" style="object-fit: contain; object-position: center;">
                                         @endif
                                         <span class="position-absolute top-0 end-0 m-1 badge bg-primary bg-opacity-75 small">
                                             <i class="fas fa-robot me-1"></i> AI
