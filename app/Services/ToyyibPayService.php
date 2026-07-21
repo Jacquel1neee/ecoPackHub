@@ -11,8 +11,11 @@ class ToyyibPayService
     public function buildBillPayload(Order $order): array
     {
         $amountInSen = (int) round($order->total_amount * 100);
-        $returnUrl = (string) config('toyyibpay.return_url', '');;
+        $returnUrl = (string) config('toyyibpay.return_url', '');
         $callbackUrl = (string) config('toyyibpay.callback_url', '');
+        $customerName = trim((string) ($order->getAttribute('customer_name') ?: 'EcoPackHub Customer'));
+        $customerEmail = trim((string) ($order->getAttribute('email') ?: config('mail.from.address', 'noreply@example.com')));
+        $customerPhone = trim((string) ($order->phone ?? ''));
 
         $returnUrl = str_replace('{order}', (string) $order->id, $returnUrl);
         $callbackUrl = str_replace('{order}', (string) $order->id, $callbackUrl);
@@ -28,8 +31,9 @@ class ToyyibPayService
             'billExternalReferenceNo' => $order->order_number,
             'billReturnUrl' => $returnUrl,
             'billCallbackUrl' => $callbackUrl,
-            'billEmail' => '',
-            'billPhone' => $order->phone ?? '',
+            'billTo' => $customerName,
+            'billEmail' => $customerEmail,
+            'billPhone' => $customerPhone,
             'mode' => config('toyyibpay.mode', 'test'),
         ];
     }
@@ -72,16 +76,26 @@ class ToyyibPayService
         }
 
         try {
-            $response = Http::asForm()->post(config('toyyibpay.endpoint', 'https://toyyibpay.com/index.php/api/createBill'), $payload);
+            $requestPayload = $payload;
+            unset($requestPayload['mode']);
+
+            $endpoint = $this->resolveEndpoint();
+            $response = $this->sendCreateBillRequest($endpoint, $requestPayload);
 
             if ($response->successful()) {
                 $body = $response->json();
+
+                if (! is_array($body) && ! is_object($body)) {
+                    $decoded = json_decode($response->body(), true);
+                    $body = is_array($decoded) ? $decoded : $response->body();
+                }
+
                 $billCode = $this->extractBillCode($body);
 
                 if ($billCode) {
                     return [
                         'success' => true,
-                        'redirect_url' => $this->buildPaymentUrl($billCode),
+                        'redirect_url' => $this->buildPaymentUrl($billCode, $endpoint),
                         'mock' => false,
                         'mode' => 'real',
                         'payload' => $payload,
@@ -90,10 +104,41 @@ class ToyyibPayService
                 }
             }
 
+            if ($this->shouldRetryWithAlternateEndpoint($response->body())) {
+                $alternateEndpoint = $this->resolveAlternateEndpoint($endpoint);
+                if ($alternateEndpoint) {
+                    $alternateResponse = $this->sendCreateBillRequest($alternateEndpoint, $requestPayload);
+
+                    if ($alternateResponse->successful()) {
+                        $alternateBody = $alternateResponse->json();
+
+                        if (! is_array($alternateBody) && ! is_object($alternateBody)) {
+                            $decoded = json_decode($alternateResponse->body(), true);
+                            $alternateBody = is_array($decoded) ? $decoded : $alternateResponse->body();
+                        }
+
+                        $alternateBillCode = $this->extractBillCode($alternateBody);
+                        if ($alternateBillCode) {
+                            return [
+                                'success' => true,
+                                'redirect_url' => $this->buildPaymentUrl($alternateBillCode, $alternateEndpoint),
+                                'mock' => false,
+                                'mode' => 'real',
+                                'payload' => $payload,
+                                'bill_code' => $alternateBillCode,
+                                'endpoint_fallback_used' => true,
+                            ];
+                        }
+                    }
+                }
+            }
+
+            $gatewayMessage = $this->extractGatewayMessage($response->body());
+
             return [
                 'success' => false,
                 'mode' => 'real',
-                'message' => 'ToyyibPay bill creation failed. Please verify your credentials and endpoint.',
+                'message' => $gatewayMessage ?: 'ToyyibPay bill creation failed. Please verify your credentials and endpoint.',
                 'payload' => $payload,
                 'response' => $response->body(),
             ];
@@ -109,6 +154,17 @@ class ToyyibPayService
 
     protected function extractBillCode(mixed $body): ?string
     {
+        if (is_string($body)) {
+            $parsed = json_decode($body, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $this->extractBillCode($parsed);
+            }
+
+            if (preg_match('/BillCode\s*[:=]\s*"?([A-Za-z0-9_-]+)"?/i', $body, $matches)) {
+                return $matches[1];
+            }
+        }
+
         if (is_array($body)) {
             foreach ($body as $item) {
                 if (is_array($item) && ! empty($item['BillCode'])) {
@@ -132,8 +188,102 @@ class ToyyibPayService
         return null;
     }
 
-    protected function buildPaymentUrl(string $billCode): string
+    protected function resolveEndpoint(): string
     {
-        return rtrim(config('toyyibpay.payment_url_base', 'https://toyyibpay.com/'), '/') . '/' . ltrim($billCode, '/');
+        $configuredEndpoint = trim((string) config('toyyibpay.endpoint', ''));
+        if ($configuredEndpoint !== '') {
+            return $configuredEndpoint;
+        }
+
+        $mode = strtolower((string) config('toyyibpay.mode', 'test'));
+
+        return $mode === 'real'
+            ? 'https://toyyibpay.com/index.php/api/createBill'
+            : 'https://dev.toyyibpay.com/index.php/api/createBill';
+    }
+
+    protected function resolveAlternateEndpoint(string $currentEndpoint): ?string
+    {
+        $normalized = strtolower(trim($currentEndpoint));
+
+        if (str_contains($normalized, 'dev.toyyibpay.com')) {
+            return 'https://toyyibpay.com/index.php/api/createBill';
+        }
+
+        if (str_contains($normalized, 'toyyibpay.com')) {
+            return 'https://dev.toyyibpay.com/index.php/api/createBill';
+        }
+
+        return null;
+    }
+
+    protected function shouldRetryWithAlternateEndpoint(string $responseBody): bool
+    {
+        if (! config('toyyibpay.auto_endpoint_fallback', true)) {
+            return false;
+        }
+
+        if (trim((string) config('toyyibpay.endpoint', '')) !== '') {
+            return false;
+        }
+
+        return str_contains(strtoupper($responseBody), 'KEY-DID-NOT-EXIST');
+    }
+
+    protected function sendCreateBillRequest(string $endpoint, array $payload)
+    {
+        return Http::asForm()
+            ->acceptJson()
+            ->timeout(20)
+            ->post($endpoint, $payload);
+    }
+
+    protected function extractGatewayMessage(string $body): ?string
+    {
+        $body = trim($body);
+
+        if ($body === '') {
+            return null;
+        }
+
+        if (preg_match('/\[([^\]]+)\]/', $body, $matches)) {
+            $code = trim($matches[1]);
+            if ($code !== '') {
+                return 'ToyyibPay bill creation failed: ' . $code;
+            }
+        }
+
+        $decoded = json_decode($body, true);
+        if (is_array($decoded)) {
+            foreach ($decoded as $item) {
+                if (is_array($item)) {
+                    $message = $item['msg'] ?? $item['message'] ?? $item['status'] ?? null;
+                    if (is_string($message) && trim($message) !== '') {
+                        return 'ToyyibPay bill creation failed: ' . trim($message);
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    protected function buildPaymentUrl(string $billCode, ?string $endpoint = null): string
+    {
+        $base = trim((string) config('toyyibpay.payment_url_base', ''));
+
+        if ($base === '') {
+            $endpoint = strtolower((string) $endpoint);
+            if ($endpoint !== '' && str_contains($endpoint, 'dev.toyyibpay.com')) {
+                $base = 'https://dev.toyyibpay.com';
+            } else {
+                $mode = strtolower((string) config('toyyibpay.mode', 'test'));
+                $base = $mode === 'real'
+                    ? 'https://toyyibpay.com'
+                    : 'https://dev.toyyibpay.com';
+            }
+        }
+
+        return rtrim($base, '/') . '/' . ltrim($billCode, '/');
     }
 }

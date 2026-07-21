@@ -33,6 +33,14 @@ class Order extends Model
     const DELIVERY_SELFPICKUP = 'selfpickup';
 
     /**
+     * Payment status constants
+     */
+    const PAYMENT_PENDING = 'pending';
+    const PAYMENT_PAID = 'paid';
+    const PAYMENT_FAILED = 'failed';
+    const PAYMENT_REFUNDED = 'refunded';
+
+    /**
      * Get delivery method label with icon
      */
     public function getDeliveryMethodLabelAttribute()
