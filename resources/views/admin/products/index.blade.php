@@ -1,6 +1,17 @@
 @extends('admin.layouts.app')
 
 @section('content')
+<style>
+    .admin-products-pagination .pagination {
+        margin-bottom: 0;
+    }
+
+    .admin-products-pagination .page-link {
+        padding: 0.25rem 0.55rem;
+        font-size: 0.875rem;
+    }
+</style>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h4><i class="fas fa-box me-2"></i>Products</h4>
     <a href="{{ route('admin.products.create') }}" class="btn btn-green">
@@ -100,7 +111,11 @@
                 </tbody>
             </table>
         </div>
-        {{ $products->links() ?? '' }}
+        @if($products->hasPages())
+            <div class="d-flex justify-content-center mt-3 admin-products-pagination">
+                {{ $products->onEachSide(1)->links('pagination::bootstrap-5') }}
+            </div>
+        @endif
     </div>
 </div>
 @endsection
