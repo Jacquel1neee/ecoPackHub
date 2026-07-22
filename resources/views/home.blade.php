@@ -2,58 +2,96 @@
 
 @section('content')
 
-    <!-- ===== AI SUGGESTION SECTION ===== -->
-    <div class="mb-5">
-        <div class="card shadow-sm border-0 rounded-3" style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9);">
-            <div class="card-body p-4">
-                <div class="d-flex align-items-center">
-                    <div class="flex-grow-1 ms-3">
-                        <h5 class="fw-bold mb-1" style="color: var(--primary-green);">
-                            <i class="fas fa-lightbulb me-2"></i>Suggestion
-                        </h5>
-                        <p class="text-muted mb-2">Based on your browsing, we think you might like these products:</p>
+    <div class="container">
+        <!-- ===== PROMOTION EVENT RECOMMENDATIONS ===== -->
+        <div class="mb-4">
+            <div class="card shadow-sm border-0 rounded-3" style="background: linear-gradient(135deg, #fff8e1, #ffecb3);">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div>
+                            <h5 class="fw-bold mb-1" style="color: #bf8b00;">
+                                <i class="fas fa-tags me-2"></i>Recommended for Discount / Promotion Events
+                            </h5>
+                            <p class="text-muted mb-0">Planning a campaign? Here are product ideas suitable for promotion events.</p>
+                        </div>
+                        <span class="badge" style="background-color: #ff9800; color: #fff; font-size: 0.75rem;">Event Picks</span>
                     </div>
-                </div>
-                <div class="row g-3 mt-2" id="ai-suggestions">
-                    @php
-                        $aiProducts = $allProducts->random(min(4, $allProducts->count()));
-                    @endphp
-                    @if($aiProducts->count() > 0)
-                        @foreach($aiProducts as $product)
-                            <div class="col-lg-3 col-md-4 col-6">
-                                <div class="card product-card h-100 shadow-sm border-0 rounded-3">
-                                    <a href="{{ route('product.show', $product) }}" class="text-decoration-none d-block position-relative" style="overflow: hidden; background: #f8f9fa; height: 150px;">
-                                        @if($product->image_url)
-                                            <img src="{{ $product->image_url }}" class="w-100 h-100" alt="{{ $product->name }}" style="object-fit: contain; object-position: center;">
-                                        @else
-                                            <img src="{{ asset('images/no-image.png') }}" class="w-100 h-100" alt="{{ $product->name }}" style="object-fit: contain; object-position: center;">
-                                        @endif
-                                    </a>
-                                    <div class="card-body p-2">
-                                        <a href="{{ route('product.show', $product) }}" class="text-decoration-none text-dark">
-                                            <h6 class="card-title fw-semibold mb-0 text-truncate" style="font-size: 0.8rem;">{{ $product->name }}</h6>
-                                        </a>
-                                        <div class="d-flex justify-content-between align-items-center mt-1">
-                                            <span class="fw-bold" style="color: var(--primary-green); font-size: 0.85rem;">
-                                                RM {{ number_format($product->min_price, 2) }}
+
+                    <div class="row g-3 mt-2" id="promotion-suggestions">
+                        @php
+                            $promoProducts = $allProducts
+                                ->filter(fn($product) => $product->has_active_discount)
+                                ->shuffle()
+                                ->take(4);
+
+                            if ($promoProducts->count() < 4) {
+                                $fallbackProducts = $allProducts
+                                    ->reject(fn($product) => $promoProducts->contains('id', $product->id))
+                                    ->shuffle()
+                                    ->take(4 - $promoProducts->count());
+
+                                $promoProducts = $promoProducts->concat($fallbackProducts);
+                            }
+                        @endphp
+                        @if($promoProducts->count() > 0)
+                            @foreach($promoProducts as $product)
+                                <div class="col-lg-3 col-md-4 col-6">
+                                    <div class="card product-card h-100 shadow-sm border-0 rounded-3">
+                                        <a href="{{ route('product.show', $product) }}" class="text-decoration-none d-block position-relative" style="overflow: hidden; background: #f8f9fa; height: 150px;">
+                                            @if($product->image_url)
+                                                <img src="{{ $product->image_url }}" class="w-100 h-100" alt="{{ $product->name }}" style="object-fit: contain; object-position: center;">
+                                            @else
+                                                <img src="{{ asset('images/no-image.png') }}" class="w-100 h-100" alt="{{ $product->name }}" style="object-fit: contain; object-position: center;">
+                                            @endif
+                                            <span class="position-absolute top-0 start-0 m-2 badge" style="background-color: #ff9800; color: #fff; font-size: 0.65rem;">
+                                                Promo Pick
                                             </span>
-                                            <small class="text-muted" style="font-size: 0.6rem;">{{ $product->variants->count() }} variants</small>
+                                        </a>
+                                        <div class="card-body p-2">
+                                            <a href="{{ route('product.show', $product) }}" class="text-decoration-none text-dark">
+                                                <h6 class="card-title fw-semibold mb-1 text-truncate" style="font-size: 0.8rem;">{{ $product->name }}</h6>
+                                            </a>
+                                            @php
+                                                $basePrice = (float) $product->min_price;
+                                                $promoPrice = (float) $product->discounted_min_price;
+                                            @endphp
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    @if($product->has_active_discount)
+                                                        <small class="text-muted text-decoration-line-through">RM {{ number_format($basePrice, 2) }}</small><br>
+                                                        <span class="fw-bold" style="color: #e65100; font-size: 0.9rem;">RM {{ number_format($promoPrice, 2) }}</span>
+                                                    @else
+                                                        <span class="fw-bold" style="color: #e65100; font-size: 0.9rem;">RM {{ number_format($basePrice, 2) }}</span>
+                                                    @endif
+                                                </div>
+                                                @if($product->has_active_discount)
+                                                    @if($product->discount_percentage !== null)
+                                                        <small class="badge bg-danger" style="font-size: 0.6rem;">-{{ number_format((float) $product->discount_percentage, 0) }}%</small>
+                                                    @else
+                                                        <small class="badge bg-danger" style="font-size: 0.6rem;">Promo</small>
+                                                    @endif
+                                                @else
+                                                    <small class="badge bg-secondary" style="font-size: 0.6rem;">No active discount</small>
+                                                @endif
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
+                            @endforeach
+                        @else
+                            <div class="col-12 text-center text-muted">
+                                <p class="mb-0">No products available for promotion recommendations yet.</p>
                             </div>
-                        @endforeach
-                    @else
-                        <div class="col-12 text-center text-muted">
-                            <p class="mb-0">No products available for suggestions yet.</p>
-                        </div>
-                    @endif
+                        @endif
+                    </div>
+
+                    <div class="mt-3 text-end">
+                        <small class="text-muted">Need custom promo pricing? Contact us via email or WhatsApp for event quotations.</small>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="container">
         <div class="row g-4">            
             <div class="col-lg-3 col-md-4">
                 <!-- Categories Card -->
@@ -316,9 +354,18 @@
                                         <div class="mt-auto">
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <span class="fw-bold" style="color: var(--primary-green); font-size: 1rem;">
-                                                    RM {{ number_format($product->min_price, 2) }}
-                                                    @if($product->min_price != $product->max_price)
-                                                        <small class="text-muted fw-normal" style="font-size: 0.7rem;">- RM {{ number_format($product->max_price, 2) }}</small>
+                                                    @if($product->has_active_discount)
+                                                        <small class="text-muted fw-normal text-decoration-line-through" style="font-size: 0.7rem;">RM {{ number_format($product->min_price, 2) }}@if($product->min_price != $product->max_price) - RM {{ number_format($product->max_price, 2) }}@endif</small>
+                                                        <br>
+                                                        RM {{ number_format($product->discounted_min_price, 2) }}
+                                                        @if($product->discounted_min_price != $product->discounted_max_price)
+                                                            <small class="text-muted fw-normal" style="font-size: 0.7rem;">- RM {{ number_format($product->discounted_max_price, 2) }}</small>
+                                                        @endif
+                                                    @else
+                                                        RM {{ number_format($product->min_price, 2) }}
+                                                        @if($product->min_price != $product->max_price)
+                                                            <small class="text-muted fw-normal" style="font-size: 0.7rem;">- RM {{ number_format($product->max_price, 2) }}</small>
+                                                        @endif
                                                     @endif
                                                 </span>
                                                 <small class="text-muted" style="font-size: 0.6rem;">{{ $product->variants->first()->packing_quantity ?? '' }}</small>
@@ -370,6 +417,62 @@
                         </a>
                     </div>
                 @endif
+            </div>
+        </div>
+
+        <!-- ===== AI SUGGESTION SECTION ===== -->
+        <div class="mb-4">
+            <div class="card shadow-sm border-0 rounded-3" style="background: linear-gradient(135deg, #e8f5e9, #c8e6c9);">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1 ms-3">
+                            <h5 class="fw-bold mb-1" style="color: var(--primary-green);">
+                                <i class="fas fa-lightbulb me-2"></i>Suggestion
+                            </h5>
+                            <p class="text-muted mb-2">Based on your browsing, we think you might like these products:</p>
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-2" id="ai-suggestions">
+                        @php
+                            $aiProducts = $allProducts->random(min(4, $allProducts->count()));
+                        @endphp
+                        @if($aiProducts->count() > 0)
+                            @foreach($aiProducts as $product)
+                                <div class="col-lg-3 col-md-4 col-6">
+                                    <div class="card product-card h-100 shadow-sm border-0 rounded-3">
+                                        <a href="{{ route('product.show', $product) }}" class="text-decoration-none d-block position-relative" style="overflow: hidden; background: #f8f9fa; height: 150px;">
+                                            @if($product->image_url)
+                                                <img src="{{ $product->image_url }}" class="w-100 h-100" alt="{{ $product->name }}" style="object-fit: contain; object-position: center;">
+                                            @else
+                                                <img src="{{ asset('images/no-image.png') }}" class="w-100 h-100" alt="{{ $product->name }}" style="object-fit: contain; object-position: center;">
+                                            @endif
+                                        </a>
+                                        <div class="card-body p-2">
+                                            <a href="{{ route('product.show', $product) }}" class="text-decoration-none text-dark">
+                                                <h6 class="card-title fw-semibold mb-0 text-truncate" style="font-size: 0.8rem;">{{ $product->name }}</h6>
+                                            </a>
+                                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                                <span class="fw-bold" style="color: var(--primary-green); font-size: 0.85rem;">
+                                                    @if($product->has_active_discount)
+                                                        <small class="text-muted text-decoration-line-through me-1">RM {{ number_format($product->min_price, 2) }}</small>
+                                                        RM {{ number_format($product->discounted_min_price, 2) }}
+                                                    @else
+                                                        RM {{ number_format($product->min_price, 2) }}
+                                                    @endif
+                                                </span>
+                                                <small class="text-muted" style="font-size: 0.6rem;">{{ $product->variants->count() }} variants</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        @else
+                            <div class="col-12 text-center text-muted">
+                                <p class="mb-0">No products available for suggestions yet.</p>
+                            </div>
+                        @endif
+                    </div>
+                </div>
             </div>
         </div>
 

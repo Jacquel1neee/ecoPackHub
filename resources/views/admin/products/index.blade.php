@@ -36,6 +36,7 @@
                         <th>Code</th>
                         <th>Name</th>
                         <th>Category</th>
+                        <th>Discount</th>
                         <th>Vendors & Prices</th>
                         <th>Stock</th>
                         <th>Actions</th>
@@ -56,6 +57,25 @@
                             <td><strong>{{ $product->code }}</strong></td>
                             <td>{{ $product->name }}</td>
                             <td><span class="badge bg-secondary">{{ $product->category->name ?? 'N/A' }}</span></td>
+                            <td>
+                                @if($product->has_active_discount)
+                                    <span class="badge bg-success mb-1">Active</span><br>
+                                    @if($product->discount_price !== null)
+                                        <small>RM {{ number_format((float) $product->discount_price, 2) }}</small>
+                                    @elseif($product->discount_percentage !== null)
+                                        <small>{{ number_format((float) $product->discount_percentage, 2) }}%</small>
+                                    @endif
+                                @elseif($product->discount_price !== null || $product->discount_percentage !== null)
+                                    <span class="badge bg-warning text-dark mb-1">Configured</span><br>
+                                    @if($product->discount_price !== null)
+                                        <small>RM {{ number_format((float) $product->discount_price, 2) }}</small>
+                                    @elseif($product->discount_percentage !== null)
+                                        <small>{{ number_format((float) $product->discount_percentage, 2) }}%</small>
+                                    @endif
+                                @else
+                                    <span class="badge bg-secondary">No Discount</span>
+                                @endif
+                            </td>
                             <td>
                                 @if($product->vendors && $product->vendors->count() > 0)
                                     @foreach($product->vendors as $vendor)
@@ -101,7 +121,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center py-4 text-muted">
+                            <td colspan="8" class="text-center py-4 text-muted">
                                 <i class="fas fa-box-open fa-2x d-block mb-2"></i>
                                 No products found.
                                 <a href="{{ route('admin.products.create') }}">Add your first product</a>

@@ -35,6 +35,9 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'material' => 'nullable|string',
+            'discount_price' => 'nullable|numeric|min:0',
+            'discount_percentage' => 'nullable|numeric|min:0|max:100',
+            'is_discount_active' => 'nullable|boolean',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             // Variants validation
             'variants.*.size' => 'nullable|string',
@@ -48,7 +51,13 @@ class ProductController extends Controller
             'vendors.*.is_preferred' => 'boolean',
         ]);
 
-        $product = new Product($request->except('image', 'variants', 'vendors'));
+        $productData = $request->except('image', 'variants', 'vendors');
+        $productData['discount_price'] = $request->filled('discount_price') ? $request->discount_price : null;
+        $productData['discount_percentage'] = $request->filled('discount_percentage') ? $request->discount_percentage : null;
+        $productData['is_discount_active'] = $request->boolean('is_discount_active')
+            && ($productData['discount_price'] !== null || $productData['discount_percentage'] !== null);
+
+        $product = new Product($productData);
 
         if ($request->hasFile('image')) {
             $imageName = time() . '_' . $request->file('image')->getClientOriginalName();
@@ -111,6 +120,9 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'material' => 'nullable|string',
+            'discount_price' => 'nullable|numeric|min:0',
+            'discount_percentage' => 'nullable|numeric|min:0|max:100',
+            'is_discount_active' => 'nullable|boolean',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             // Variants validation
             'variants.*.size' => 'nullable|string',
@@ -124,7 +136,13 @@ class ProductController extends Controller
             'vendors.*.is_preferred' => 'boolean',
         ]);
 
-        $product->fill($request->except('image', 'variants', 'vendors'));
+        $productData = $request->except('image', 'variants', 'vendors');
+        $productData['discount_price'] = $request->filled('discount_price') ? $request->discount_price : null;
+        $productData['discount_percentage'] = $request->filled('discount_percentage') ? $request->discount_percentage : null;
+        $productData['is_discount_active'] = $request->boolean('is_discount_active')
+            && ($productData['discount_price'] !== null || $productData['discount_percentage'] !== null);
+
+        $product->fill($productData);
 
         if ($request->hasFile('image')) {
             if ($product->image_path && file_exists(public_path($product->image_path))) {
