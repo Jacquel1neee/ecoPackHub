@@ -73,7 +73,7 @@ class OrderController extends Controller
         // If self pickup, auto-fill with store address; if shipping, use user's address
         $shippingAddress = $request->delivery_method === 'shipping'
             ? $request->shipping_address
-            : 'Self Pickup - EcoPack Hub Store, 123 Jalan Example, 43000 Kajang, Selangor';
+            : 'Self Pickup - G-08,Menara Mutiara Majestic,15, Jln Othman, Pj Old Town, 46000 Petaling Jaya, Selangor';
 
         // ===== 6. Create order =====
         $order = Order::create([

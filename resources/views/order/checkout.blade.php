@@ -94,14 +94,14 @@
                                 <strong>Self Pickup Location:</strong><br>
                                 <p class="mt-2 mb-0">
                                     📍 EcoPack Hub Store<br>
-                                    123, Jalan Example,<br>
-                                    43000 Kajang, Selangor<br>
+                                    G-08,Menara Mutiara Majestic,15, Jln Othman,<br>
+                                    Pj Old Town, 46000 Petaling Jaya, Selangor<br>
                                     <br>
                                     ⏰ Operating Hours: 10:00 AM - 8:00 PM (Daily)
                                 </p>
                             </div>
                             <!-- Hidden input: auto-fill address for self pickup -->
-                            <input type="hidden" name="shipping_address" value="Self Pickup - EcoPack Hub Store">
+                            <input type="hidden" name="shipping_address" value="Self Pickup - G-08,Menara Mutiara Majestic,15, Jln Othman, Pj Old Town, 46000 Petaling Jaya, Selangor">
                         </div>
 
                         <!-- ===== Order Notes (Optional) ===== -->
@@ -246,7 +246,7 @@ function selectDeliveryMethod(method) {
         // Show hidden input with auto-filled address
         hiddenAddressInput.style.display = 'block';
         hiddenAddressInput.disabled = false;
-        hiddenAddressInput.value = 'Self Pickup - EcoPack Hub Store';
+        hiddenAddressInput.value = 'Self Pickup - G-08,Menara Mutiara Majestic,15, Jln Othman, Pj Old Town, 46000 Petaling Jaya, Selangor';
         
         // Hide address label
         addressLabel.style.display = 'none';
