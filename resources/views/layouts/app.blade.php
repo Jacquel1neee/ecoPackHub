@@ -157,8 +157,13 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('enquiry.history') }}">
-                                <i class="fas fa-envelope me-1"></i>My Enquiries
+                            <a class="nav-link" href="mailto:hitech7785@gmail.com">
+                                <i class="fas fa-envelope me-1"></i>Email Enquiry
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="https://wa.me/60122210442" target="_blank" rel="noopener">
+                                <i class="fab fa-whatsapp me-1"></i>WhatsApp
                             </a>
                         </li>
                         <li class="nav-item">
