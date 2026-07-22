@@ -138,7 +138,7 @@
     <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
         <div class="container">
             <a class="navbar-brand" href="{{ route('home') }}">
-                <i class="fas fa-leaf me-2"></i>EcoPackHub
+                <img src="{{ asset('images/HiTechEcoPack.png') }}" alt="EcoPackHub Logo" style="height: 38px; width: auto;">
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -230,7 +230,9 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-4 mb-3">
-                    <h5><i class="fas fa-leaf me-2"></i>EcoPackHub</h5>
+                    <h5>
+                        <img src="{{ asset('images/HiTechEcoPack.png') }}" alt="EcoPackHub Logo" style="height: 28px; width: auto;">
+                    </h5>
                     <p>Your trusted partner for sustainable biodegradable and paper-based packaging solutions in Malaysia.</p>
                     <p><small>Hybrid Infinity Tech Sdn. Bhd.</small></p>
                 </div>

@@ -180,7 +180,7 @@
     <nav class="sidebar">
         <div class="brand">
             <a href="{{ route('admin.dashboard') }}">
-                <i class="fas fa-leaf"></i> <span>EcoPackHub</span>
+                <img src="{{ asset('images/HiTechEcoPack.png') }}" alt="EcoPackHub Logo" style="height: 34px; width: auto;">
             </a>
         </div>
         <div class="nav flex-column">
