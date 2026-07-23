@@ -51,6 +51,29 @@
                 <textarea name="description" rows="2" class="form-control">{{ old('description') }}</textarea>
             </div>
 
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Discount Price (RM)</label>
+                    <input type="number" step="0.01" min="0" name="discount_price" class="form-control @error('discount_price') is-invalid @enderror" value="{{ old('discount_price') }}" placeholder="e.g., 12.50">
+                    @error('discount_price')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Discount Percentage (%)</label>
+                    <input type="number" step="0.01" min="0" max="100" name="discount_percentage" class="form-control @error('discount_percentage') is-invalid @enderror" value="{{ old('discount_percentage') }}" placeholder="e.g., 10">
+                    @error('discount_percentage')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-4 mb-3 d-flex align-items-end">
+                    <div class="form-check mb-2">
+                        <input type="checkbox" name="is_discount_active" value="1" class="form-check-input" id="is_discount_active" {{ old('is_discount_active') ? 'checked' : '' }}>
+                        <label class="form-check-label" for="is_discount_active">
+                            Activate Discount on Home Page
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <small class="text-muted d-block mb-2">Set either discount price or discount percentage. Tick activate to apply on homepage cards.</small>
+
             <div class="mb-3">
                 <label class="form-label">Product Image</label>
                 <input type="file" name="image" class="form-control @error('image') is-invalid @enderror" accept="image/*">

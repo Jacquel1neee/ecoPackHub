@@ -180,7 +180,7 @@
     <nav class="sidebar">
         <div class="brand">
             <a href="{{ route('admin.dashboard') }}">
-                <i class="fas fa-leaf"></i> <span>EcoPackHub</span>
+                <img src="{{ asset('images/HiTechEcoPack.png') }}" alt="EcoPackHub Logo" style="height: 34px; width: auto;">
             </a>
         </div>
         <div class="nav flex-column">
@@ -207,19 +207,6 @@
             <!-- Orders -->
             <a href="{{ route('admin.orders.index') }}" class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
                 <i class="fas fa-shopping-cart"></i> <span>Orders</span>
-            </a>
-            
-            <!-- Enquiries -->
-            <a href="{{ route('admin.enquiries.index') }}" class="nav-link {{ request()->routeIs('admin.enquiries.*') ? 'active' : '' }}">
-                <i class="fas fa-envelope"></i> <span>Enquiries</span>
-                @php
-                    $unreadCount = \App\Models\EnquiryReply::where('sender_type', 'user')
-                        ->where('is_read_by_admin', false)
-                        ->count();
-                @endphp
-                @if($unreadCount > 0)
-                    <span class="badge bg-danger rounded-pill ms-auto" style="font-size: 0.6rem;">{{ $unreadCount }}</span>
-                @endif
             </a>
             
             <!-- Feedbacks -->

@@ -127,12 +127,24 @@
                         </button>
                     </form>
 
-                    <!-- ===== ENQUIRY BUTTON ===== -->
-                    <a href="{{ route('enquiry.create', $product) }}" class="btn w-100 mt-2" style="background-color: transparent; color: #6c757d; border: 2px solid #6c757d; border-radius: 30px; padding: 12px; font-size: 1rem; transition: all 0.3s; text-decoration: none; display: inline-block; text-align: center;" 
-                       onmouseover="this.style.backgroundColor='#6c757d'; this.style.color='#fff';" 
-                       onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6c757d';">
-                        <i class="fas fa-envelope me-2"></i> Enquire About This Product
-                    </a>
+                    <!-- ===== EMAIL + WHATSAPP ENQUIRY BUTTONS ===== -->
+                    @php
+                        $emailSubject = rawurlencode('Product Enquiry: ' . $product->name . ' (' . $product->code . ')');
+                        $emailBody = rawurlencode("Hi, I would like to enquire about this product:\n\nProduct: {$product->name}\nCode: {$product->code}\n\nPlease share more details. Thank you.");
+                        $whatsAppMessage = rawurlencode("Hi, I would like to enquire about this product: {$product->name} ({$product->code}).");
+                    @endphp
+                    <div class="d-flex gap-2 mt-2">
+                        <a href="mailto:hitech7785@gmail.com?subject={{ $emailSubject }}&body={{ $emailBody }}" class="btn flex-fill" style="background-color: transparent; color: #6c757d; border: 2px solid #6c757d; border-radius: 30px; padding: 12px; font-size: 1rem; transition: all 0.3s; text-decoration: none; display: inline-block; text-align: center;" 
+                           onmouseover="this.style.backgroundColor='#6c757d'; this.style.color='#fff';" 
+                           onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6c757d';">
+                            <i class="fas fa-envelope me-2"></i> Enquire via Email
+                        </a>
+                        <a href="https://wa.me/60122210442?text={{ $whatsAppMessage }}" target="_blank" rel="noopener" class="btn flex-fill" style="background-color: #25D366; color: #fff; border: 2px solid #25D366; border-radius: 30px; padding: 12px; font-size: 1rem; transition: all 0.3s; text-decoration: none; display: inline-block; text-align: center;"
+                           onmouseover="this.style.backgroundColor='#1fb857'; this.style.borderColor='#1fb857';"
+                           onmouseout="this.style.backgroundColor='#25D366'; this.style.borderColor='#25D366';">
+                            <i class="fab fa-whatsapp me-2"></i> WhatsApp
+                        </a>
+                    </div>
 
                     <!-- Back to Products -->
                     <a href="{{ route('home') }}#products" class="btn btn-outline-secondary w-100 mt-2" style="border-radius: 30px;">

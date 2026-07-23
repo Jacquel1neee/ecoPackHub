@@ -14,7 +14,14 @@ class Product extends Model
         'category_id', 'code', 'name', 'description', 
         'material', 'image', 'image_path', 'image_path2', 
         'image_path3', 'image_path4', 'image_path5', 
-        'image_path6', 'image_path7', 'product_group'
+        'image_path6', 'image_path7', 'product_group',
+        'discount_price', 'discount_percentage', 'is_discount_active'
+    ];
+
+    protected $casts = [
+        'discount_price' => 'decimal:2',
+        'discount_percentage' => 'decimal:2',
+        'is_discount_active' => 'boolean',
     ];
 
     /**
@@ -174,6 +181,41 @@ class Product extends Model
     public function getMaxPriceAttribute()
     {
         return $this->variants->max('price') ?? 0;
+    }
+
+    public function getHasActiveDiscountAttribute(): bool
+    {
+        return (bool) $this->is_discount_active
+            && ($this->discount_price !== null || $this->discount_percentage !== null);
+    }
+
+    public function calculateDiscountedPrice(float $basePrice): float
+    {
+        if (! $this->has_active_discount) {
+            return $basePrice;
+        }
+
+        if ($this->discount_price !== null) {
+            $discounted = (float) $this->discount_price;
+            return max(0, min($basePrice, $discounted));
+        }
+
+        if ($this->discount_percentage !== null) {
+            $percentage = max(0, min(100, (float) $this->discount_percentage));
+            return round($basePrice * (1 - ($percentage / 100)), 2);
+        }
+
+        return $basePrice;
+    }
+
+    public function getDiscountedMinPriceAttribute(): float
+    {
+        return $this->calculateDiscountedPrice((float) $this->min_price);
+    }
+
+    public function getDiscountedMaxPriceAttribute(): float
+    {
+        return $this->calculateDiscountedPrice((float) $this->max_price);
     }
 
     public function getTotalStockAttribute()

@@ -138,7 +138,7 @@
     <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
         <div class="container">
             <a class="navbar-brand" href="{{ route('home') }}">
-                <i class="fas fa-leaf me-2"></i>EcoPackHub
+                <img src="{{ asset('images/HiTechEcoPack.png') }}" alt="EcoPackHub Logo" style="height: 38px; width: auto;">
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -157,8 +157,13 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('enquiry.history') }}">
-                                <i class="fas fa-envelope me-1"></i>My Enquiries
+                            <a class="nav-link" href="mailto:hitech7785@gmail.com">
+                                <i class="fas fa-envelope me-1"></i>Email Enquiry
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="https://wa.me/60122210442" target="_blank" rel="noopener">
+                                <i class="fab fa-whatsapp me-1"></i>WhatsApp
                             </a>
                         </li>
                         <li class="nav-item">
@@ -230,7 +235,9 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-4 mb-3">
-                    <h5><i class="fas fa-leaf me-2"></i>EcoPackHub</h5>
+                    <h5>
+                        <img src="{{ asset('images/HiTechEcoPack.png') }}" alt="EcoPackHub Logo" style="height: 28px; width: auto;">
+                    </h5>
                     <p>Your trusted partner for sustainable biodegradable and paper-based packaging solutions in Malaysia.</p>
                     <p><small>Hybrid Infinity Tech Sdn. Bhd.</small></p>
                 </div>
