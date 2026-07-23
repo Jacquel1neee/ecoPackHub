@@ -45,7 +45,9 @@
                                 <tr>
                                     <th>Size</th>
                                     <th>Packing Quantity</th>
-                                    <th>Price</th>
+                                    <th>Vendor</th>
+                                    <th>Vendor Price</th>
+                                    <th>Product Price</th>
                                     <th>Stock</th>
                                 </tr>
                             </thead>
@@ -54,6 +56,8 @@
                                     <tr>
                                         <td><strong>{{ $variant->size ?? 'Standard' }}</strong></td>
                                         <td>{{ $variant->packing_quantity }}</td>
+                                        <td>{{ $variant->vendor->name ?? 'N/A' }}</td>
+                                        <td>RM {{ number_format($variant->vendor_price, 2) }}</td>
                                         <td style="color: var(--primary-green); font-weight: bold;">
                                             RM {{ number_format($variant->price, 2) }}
                                         </td>
@@ -69,7 +73,7 @@
                             </tbody>
                             <tfoot>
                                 <tr class="fw-bold">
-                                    <td colspan="2" class="text-end">Price Range:</td>
+                                    <td colspan="3" class="text-end">Price Range:</td>
                                     <td colspan="2" style="color: var(--primary-green);">
                                         RM {{ number_format($product->min_price, 2) }}
                                         @if($product->min_price != $product->max_price)

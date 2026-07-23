@@ -46,23 +46,19 @@
                             <td>{{ $product->name }}</td>
                             <td><span class="badge bg-secondary">{{ $product->category->name ?? 'N/A' }}</span></td>
                             <td>
-                                @if($product->vendors && $product->vendors->count() > 0)
-                                    @foreach($product->vendors as $vendor)
-                                        <div class="d-flex justify-content-between align-items-center mb-1">
-                                            <span class="badge bg-info">{{ $vendor->name }}</span>
-                                            <span class="small">RM {{ number_format($vendor->pivot->price, 2) }}</span>
-                                            @if($vendor->pivot->is_preferred)
-                                                <span class="badge bg-warning text-dark">★</span>
-                                            @endif
-                                        </div>
-                                    @endforeach
-                                @else
+                                @php
+                                    $vendorGroups = $product->variants->filter(fn ($variant) => $variant->vendor)->groupBy('vendor_id');
+                                @endphp
+                                @forelse($vendorGroups as $vendorVariants)
+                                    @php $vendor = $vendorVariants->first()->vendor; @endphp
+                                    <div class="mb-1">
+                                        <div><span class="badge bg-info">{{ $vendor->name }}</span></div>
+                                        <div class="small">Sell Price: RM {{ $vendorVariants->pluck('price')->map(fn ($price) => number_format($price, 2))->implode(', RM ') }}</div>
+                                        <div class="small text-muted">Cost Price: RM {{ $vendorVariants->pluck('vendor_price')->map(fn ($price) => number_format($price, 2))->implode(', RM ') }}</div>
+                                    </div>
+                                @empty
                                     <span class="text-muted">No vendors assigned</span>
-                                    <br>
-                                    <a href="{{ route('admin.products.edit', $product) }}" class="btn btn-sm btn-outline-primary mt-1">
-                                        <i class="fas fa-plus"></i> Add Vendor
-                                    </a>
-                                @endif
+                                @endforelse
                             </td>
                             <td>
                                 @php

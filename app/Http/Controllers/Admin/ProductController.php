@@ -14,7 +14,7 @@ class ProductController extends Controller
 {
     public function index()
     {
-        $products = Product::with(['category', 'variants', 'vendors'])
+        $products = Product::with(['category', 'variants.vendor'])
                            ->orderBy('created_at', 'desc')
                            ->paginate(20);
         return view('admin.products.index', compact('products'));
@@ -40,12 +40,9 @@ class ProductController extends Controller
             'variants.*.size' => 'nullable|string',
             'variants.*.packing_quantity' => 'required|string',
             'variants.*.price' => 'required|numeric|min:0',
+            'variants.*.vendor_price' => 'required|numeric|min:0',
             'variants.*.stock' => 'required|integer|min:0',
-            // Vendors validation
-            'vendors' => 'nullable|array',
-            'vendors.*.id' => 'exists:vendors,id',
-            'vendors.*.price' => 'required|numeric|min:0',
-            'vendors.*.is_preferred' => 'boolean',
+            'variants.*.vendor_id' => 'required|exists:vendors,id',
         ]);
 
         $product = new Product($request->except('image', 'variants', 'vendors'));
@@ -64,34 +61,24 @@ class ProductController extends Controller
             foreach ($request->variants as $variantData) {
                 if (!empty($variantData['packing_quantity']) && isset($variantData['price'])) {
                     $product->variants()->create([
+                        'vendor_id' => $variantData['vendor_id'],
                         'size' => $variantData['size'] ?? 'Standard',
                         'packing_quantity' => $variantData['packing_quantity'],
                         'price' => $variantData['price'],
+                        'vendor_price' => $variantData['vendor_price'],
                         'stock' => $variantData['stock'] ?? 0,
                     ]);
                 }
             }
         }
 
-        // Attach vendors
-        if ($request->has('vendors')) {
-            foreach ($request->vendors as $vendorData) {
-                if (!empty($vendorData['id']) && isset($vendorData['price'])) {
-                    $product->vendors()->attach($vendorData['id'], [
-                        'price' => $vendorData['price'],
-                        'is_preferred' => $vendorData['is_preferred'] ?? false,
-                    ]);
-                }
-            }
-        }
-
         return redirect()->route('admin.products.index')
-            ->with('success', 'Product created successfully with ' . $product->variants->count() . ' variants and ' . $product->vendors->count() . ' vendors!');
+            ->with('success', 'Product created successfully with ' . $product->variants->count() . ' variants!');
     }
 
     public function show(Product $product)
     {
-        $product->load('category', 'variants', 'vendors');
+        $product->load('category', 'variants.vendor');
         return view('admin.products.show', compact('product'));
     }
 
@@ -99,7 +86,7 @@ class ProductController extends Controller
     {
         $categories = Category::all();
         $vendors = Vendor::where('is_active', true)->get();
-        $product->load('variants', 'vendors');
+        $product->load('variants.vendor');
         return view('admin.products.edit', compact('product', 'categories', 'vendors'));
     }
 
@@ -116,12 +103,9 @@ class ProductController extends Controller
             'variants.*.size' => 'nullable|string',
             'variants.*.packing_quantity' => 'required|string',
             'variants.*.price' => 'required|numeric|min:0',
+            'variants.*.vendor_price' => 'required|numeric|min:0',
             'variants.*.stock' => 'required|integer|min:0',
-            // Vendors validation
-            'vendors' => 'nullable|array',
-            'vendors.*.id' => 'exists:vendors,id',
-            'vendors.*.price' => 'required|numeric|min:0',
-            'vendors.*.is_preferred' => 'boolean',
+            'variants.*.vendor_id' => 'required|exists:vendors,id',
         ]);
 
         $product->fill($request->except('image', 'variants', 'vendors'));
@@ -146,33 +130,19 @@ class ProductController extends Controller
             foreach ($request->variants as $variantData) {
                 if (!empty($variantData['packing_quantity']) && isset($variantData['price'])) {
                     $product->variants()->create([
+                        'vendor_id' => $variantData['vendor_id'],
                         'size' => $variantData['size'] ?? 'Standard',
                         'packing_quantity' => $variantData['packing_quantity'],
                         'price' => $variantData['price'],
+                        'vendor_price' => $variantData['vendor_price'],
                         'stock' => $variantData['stock'] ?? 0,
                     ]);
                 }
             }
         }
 
-        // ===== Update Vendors =====
-        if ($request->has('vendors')) {
-            $syncData = [];
-            foreach ($request->vendors as $vendorData) {
-                if (!empty($vendorData['id']) && isset($vendorData['price'])) {
-                    $syncData[$vendorData['id']] = [
-                        'price' => $vendorData['price'],
-                        'is_preferred' => $vendorData['is_preferred'] ?? false,
-                    ];
-                }
-            }
-            $product->vendors()->sync($syncData);
-        } else {
-            $product->vendors()->detach();
-        }
-
         return redirect()->route('admin.products.index')
-            ->with('success', 'Product updated successfully with ' . $product->variants->count() . ' variants and ' . $product->vendors->count() . ' vendors!');
+            ->with('success', 'Product updated successfully with ' . $product->variants->count() . ' variants!');
     }
 
     public function destroy(Product $product)
@@ -182,7 +152,7 @@ class ProductController extends Controller
         }
         
         $product->variants()->delete();
-        $product->vendors()->detach(); // Remove vendor relationships
+        $product->vendors()->detach(); // Remove legacy product vendor relationships
         $product->delete();
         
         return redirect()->route('admin.products.index')
