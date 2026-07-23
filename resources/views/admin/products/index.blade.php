@@ -36,7 +36,7 @@
                         <th>Name</th>
                         <th>Category</th>
                         <th>Discount</th>
-                        <th>Vendors & Prices</th>
+                        <th>Variants, Vendors & Prices</th>
                         <th>Stock</th>
                         <th>Actions</th>
                     </tr>
@@ -76,18 +76,20 @@
                                 @endif
                             </td>
                             <td>
-                                @php
-                                    $vendorGroups = $product->variants->filter(fn ($variant) => $variant->vendor)->groupBy('vendor_id');
-                                @endphp
-                                @forelse($vendorGroups as $vendorVariants)
-                                    @php $vendor = $vendorVariants->first()->vendor; @endphp
-                                    <div class="mb-1">
-                                        <div><span class="badge bg-info">{{ $vendor->name }}</span></div>
-                                        <div class="small">Sell Price: RM {{ $vendorVariants->pluck('price')->map(fn ($price) => number_format($price, 2))->implode(', RM ') }}</div>
-                                        <div class="small text-muted">Cost Price: RM {{ $vendorVariants->pluck('vendor_price')->map(fn ($price) => number_format($price, 2))->implode(', RM ') }}</div>
+                                @forelse($product->variants as $variant)
+                                    <div class="mb-2 pb-2 border-bottom">
+                                        <div class="fw-bold">
+                                            {{ $variant->size ?: 'Standard' }}
+                                            @if($variant->packing_quantity)
+                                                <span class="text-muted">({{ $variant->packing_quantity }})</span>
+                                            @endif
+                                        </div>
+                                        <div class="small">Vendor: {{ $variant->vendor->name ?? 'No vendor' }}</div>
+                                        <div class="small">Sell Price: RM {{ number_format((float) $variant->price, 2) }}</div>
+                                        <div class="small text-muted">Cost Price: RM {{ number_format((float) $variant->vendor_price, 2) }}</div>
                                     </div>
                                 @empty
-                                    <span class="text-muted">No vendors assigned</span>
+                                    <span class="text-muted">No variants assigned</span>
                                 @endforelse
                             </td>
                             <td>
