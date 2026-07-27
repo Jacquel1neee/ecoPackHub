@@ -29,12 +29,33 @@ class OrderController extends Controller
         $items = $cart->items()->with('variant.product')->get();
         
         // Calculate subtotal
-        $total = $items->sum(function ($item) {
+        $subtotal = $items->sum(function ($item) {
             return $item->quantity * ($item->variant->price ?? 0);
         });
+        $shippingFee = $this->calculateShippingFee($items);
+        $total = $subtotal + $shippingFee;
 
         // Return checkout view
-        return view('order.checkout', compact('items', 'total'));
+        return view('order.checkout', compact('items', 'subtotal', 'shippingFee', 'total'));
+    }
+
+    public function calculateShippingFee($items): float
+    {
+        $packingQuantities = $items->map(function ($item) {
+            $packingQuantity = $item->variant->packing_quantity ?? null;
+
+            return is_string($packingQuantity) ? strtolower($packingQuantity) : '';
+        })->filter();
+
+        if ($packingQuantities->contains(fn ($value) => str_contains($value, 'ctn'))) {
+            return 12.0;
+        }
+
+        if ($packingQuantities->contains(fn ($value) => str_contains($value, 'pkt') || str_contains($value, 'pack'))) {
+            return 5.0;
+        }
+
+        return 5.0;
     }
 
     /**
@@ -65,8 +86,7 @@ class OrderController extends Controller
         });
 
         // ===== 4. Calculate shipping fee =====
-        // Shipping: RM 5.00, Self Pickup: FREE (RM 0.00)
-        $shippingFee = $request->delivery_method === 'shipping' ? 5.00 : 0.00;
+        $shippingFee = $request->delivery_method === 'shipping' ? $this->calculateShippingFee($items) : 0.00;
         $total = $subtotal + $shippingFee;
 
         // ===== 5. Handle shipping address =====

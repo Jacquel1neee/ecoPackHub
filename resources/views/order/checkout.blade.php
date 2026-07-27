@@ -36,7 +36,7 @@
                                     <label class="form-check-label fw-bold" for="shipping" style="cursor: pointer;">
                                         <i class="fas fa-truck me-2" style="color: var(--primary-green);"></i>
                                         Shipping
-                                        <span class="badge bg-warning ms-2">+ RM 5.00</span>
+                                        <span class="badge bg-warning ms-2">+ RM {{ number_format($shippingFee, 2) }}</span>
                                     </label>
                                     <div class="small text-muted mt-1">Deliver to your address (1-3 business days)</div>
                                 </div>
@@ -151,7 +151,7 @@
                     <!-- Shipping Fee (dynamically updated) -->
                     <div class="d-flex justify-content-between mt-2" id="shipping-fee-row">
                         <span>Shipping Fee</span>
-                        <span id="shipping-fee-amount">RM 5.00</span>
+                        <span id="shipping-fee-amount">RM {{ number_format($shippingFee, 2) }}</span>
                     </div>
                     
                     <hr>
@@ -160,7 +160,7 @@
                     <div class="d-flex justify-content-between fw-bold">
                         <span>Total</span>
                         <span style="color: var(--primary-green); font-size: 1.3rem;" id="total-amount">
-                            RM {{ number_format($total + 5.00, 2) }}
+                            RM {{ number_format($total, 2) }}
                         </span>
                     </div>
                     
@@ -176,8 +176,8 @@
 <!-- ===== JavaScript: Toggle delivery method and update prices ===== -->
 <script>
 // Shipping fee constant
-const SHIPPING_FEE = 5.00;
-const SUBTOTAL = {{ $total }};
+const SHIPPING_FEE = {{ (float) $shippingFee }};
+const SUBTOTAL = {{ $subtotal }};
 
 /**
  * Select delivery method and update UI
