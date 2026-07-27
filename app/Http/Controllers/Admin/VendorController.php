@@ -53,7 +53,6 @@ class VendorController extends Controller
             'address' => 'nullable|string',
         ]);
 
-        // 👇 关键：处理 is_active
         $data = $request->all();
         $data['is_active'] = $request->has('is_active') ? 1 : 0;
 

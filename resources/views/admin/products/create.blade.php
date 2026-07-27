@@ -48,7 +48,16 @@
 
             <div class="mb-3">
                 <label class="form-label">Description</label>
-                <textarea name="description" rows="2" class="form-control">{{ old('description') }}</textarea>
+                <div class="border rounded-3 p-3 mb-2 bg-light">
+                    <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                        <button type="button" class="btn btn-outline-success btn-sm" id="ai-description-btn">
+                            <i class="fas fa-wand-magic-sparkles me-1"></i> Generate Short Description from Image
+                        </button>
+                        <span class="text-muted small">You can still edit the text manually afterward.</span>
+                    </div>
+                    <div id="ai-description-status" class="text-muted small"></div>
+                </div>
+                <textarea id="product-description" name="description" rows="2" class="form-control">{{ old('description') }}</textarea>
             </div>
 
             <div class="row">
@@ -142,6 +151,48 @@
 </div>
 
 <script>
+    document.getElementById('ai-description-btn').addEventListener('click', function() {
+        const button = document.getElementById('ai-description-btn');
+        const status = document.getElementById('ai-description-status');
+        const descriptionField = document.getElementById('product-description');
+        const imageInput = document.querySelector('input[name="image"]');
+
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Generating...';
+        status.className = 'text-muted small';
+        status.textContent = 'Analyzing the image and drafting a short description...';
+
+        const formData = new FormData();
+        formData.append('_token', '{{ csrf_token() }}');
+        if (imageInput && imageInput.files && imageInput.files[0]) {
+            formData.append('ai_image', imageInput.files[0]);
+        }
+
+        fetch('{{ route('admin.products.ai-description') }}', {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: formData
+        })
+        .then(async response => {
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'Unable to generate a description.');
+            }
+
+            descriptionField.value = data.description;
+            status.className = 'text-success small';
+            status.textContent = 'Short description added. You can edit it manually if needed.';
+        })
+        .catch((error) => {
+            status.className = 'text-danger small';
+            status.textContent = error.message;
+        })
+        .finally(() => {
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-wand-magic-sparkles me-1"></i> Generate Short Description from Image';
+        });
+    });
+
     // ===== Variant Management =====
     let variantIndex = 1;
 

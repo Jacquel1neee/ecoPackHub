@@ -51,7 +51,16 @@
 
             <div class="mb-3">
                 <label class="form-label">Description</label>
-                <textarea name="description" rows="2" class="form-control">{{ old('description', $product->description) }}</textarea>
+                <div class="border rounded-3 p-3 mb-2 bg-light">
+                    <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                        <button type="button" class="btn btn-outline-success btn-sm" id="ai-description-btn">
+                            <i class="fas fa-wand-magic-sparkles me-1"></i> Generate Short Description from Image
+                        </button>
+                        <span class="text-muted small">You can still edit the text manually afterward.</span>
+                    </div>
+                    <div id="ai-description-status" class="text-muted small"></div>
+                </div>
+                <textarea id="product-description" name="description" rows="2" class="form-control">{{ old('description', $product->description) }}</textarea>
             </div>
 
             <div class="row">
@@ -80,13 +89,39 @@
             <div class="mb-3">
                 <label class="form-label">Current Image</label>
                 @if($product->image_url)
-                    <div class="mb-2">
-                        <img src="{{ $product->image_url }}" style="max-height: 150px; border-radius: 8px;">
+                    <div class="mb-2 border rounded-3 p-2 bg-light text-center">
+                        <img id="current-product-image" src="{{ $product->image_url }}" style="max-width: 100%; max-height: 320px; width: auto; height: auto; object-fit: contain; border-radius: 8px;">
                     </div>
                 @endif
                 <input type="file" name="image" class="form-control @error('image') is-invalid @enderror" accept="image/*">
                 @error('image')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 <small class="text-muted">Leave empty to keep current image. Allowed: jpeg, png, jpg, gif (max 2MB)</small>
+            </div>
+
+            <div class="border rounded-3 p-3 mb-4 bg-light">
+                <h5 class="fw-bold mb-2" style="color: var(--primary-green);">
+                    <i class="fas fa-magic me-2"></i>AI Photo Enhancement
+                </h5>
+                <p class="text-muted small mb-3">
+                    Upload a basic product photo and generate 4 polished variations. Pick the best one to set as the main image.
+                </p>
+
+                <div id="ai-enhance-form" class="row g-3">
+                    <div class="col-md-8">
+                        <input type="file" name="ai_image" id="ai-image-input" class="form-control" accept="image/*">
+                        <small class="text-muted">Leave blank to use the current product image.</small>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="button" class="btn btn-outline-success w-100" id="ai-generate-btn">
+                            <i class="fas fa-wand-magic-sparkles me-1"></i> Generate 4 Variations
+                        </button>
+                    </div>
+                    <div class="col-12">
+                        <div id="ai-status" class="text-muted small"></div>
+                    </div>
+                </div>
+
+                <div id="ai-gallery" class="row g-3 mt-2"></div>
             </div>
 
             <hr class="my-4">
@@ -233,6 +268,145 @@
         if (document.querySelectorAll('.variant-item').length === 1) {
             const btn = document.querySelector('.remove-variant');
             if (btn) btn.style.display = 'none';
+        }
+    });
+
+    document.getElementById('ai-description-btn').addEventListener('click', function() {
+        const button = document.getElementById('ai-description-btn');
+        const status = document.getElementById('ai-description-status');
+        const descriptionField = document.getElementById('product-description');
+        const aiImageInput = document.getElementById('ai-image-input');
+
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Generating...';
+        status.className = 'text-muted small';
+        status.textContent = 'Analyzing the image and drafting a short description...';
+
+        const formData = new FormData();
+        formData.append('_token', '{{ csrf_token() }}');
+        if (aiImageInput && aiImageInput.files && aiImageInput.files[0]) {
+            formData.append('ai_image', aiImageInput.files[0]);
+        }
+
+        fetch('{{ route('admin.products.ai-description', $product) }}', {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: formData
+        })
+        .then(async response => {
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'Unable to generate a description.');
+            }
+
+            descriptionField.value = data.description;
+            status.className = 'text-success small';
+            status.textContent = 'Short description added. You can edit it manually if needed.';
+        })
+        .catch((error) => {
+            status.className = 'text-danger small';
+            status.textContent = error.message;
+        })
+        .finally(() => {
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-wand-magic-sparkles me-1"></i> Generate Short Description from Image';
+        });
+    });
+
+    document.getElementById('ai-generate-btn').addEventListener('click', function() {
+        const button = document.getElementById('ai-generate-btn');
+        const status = document.getElementById('ai-status');
+        const gallery = document.getElementById('ai-gallery');
+        const input = document.getElementById('ai-image-input');
+
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Generating...';
+        status.className = 'text-muted small';
+        status.textContent = 'Creating polished variations...';
+
+        const formData = new FormData();
+        formData.append('_token', '{{ csrf_token() }}');
+        if (input.files && input.files[0]) {
+            formData.append('ai_image', input.files[0]);
+        }
+        fetch('{{ route('admin.products.ai-enhance', $product) }}', {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: formData
+        })
+        .then(async response => {
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'Unable to generate images right now.');
+            }
+
+            gallery.innerHTML = '';
+            data.images.forEach((image) => {
+                const col = document.createElement('div');
+                col.className = 'col-md-3';
+                col.innerHTML = `
+                    <div class="border rounded-3 p-2 text-center bg-white shadow-sm">
+                        <img src="${image.url}" class="img-fluid rounded mb-2" style="width: 100%; max-height: 260px; object-fit: contain; background: #f8f9fa;">
+                        <button type="button" class="btn btn-green btn-sm select-ai-image" data-image-path="${image.path}">
+                            <i class="fas fa-check"></i> Use as Main Image
+                        </button>
+                    </div>
+                `;
+                gallery.appendChild(col);
+            });
+
+            status.className = 'text-success small';
+            status.textContent = data.message || 'Generated 4 variations.';
+        })
+        .catch((error) => {
+            status.className = 'text-danger small';
+            status.textContent = error.message;
+        })
+        .finally(() => {
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-wand-magic-sparkles me-1"></i> Generate 4 Variations';
+        });
+    });
+
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.select-ai-image')) {
+            const button = e.target.closest('.select-ai-image');
+            const imagePath = button.getAttribute('data-image-path');
+            const status = document.getElementById('ai-status');
+
+            status.className = 'text-muted small';
+            status.textContent = 'Applying selected image...';
+
+            const formData = new FormData();
+            formData.append('_token', '{{ csrf_token() }}');
+            formData.append('image_path', imagePath);
+
+            fetch('{{ route('admin.products.ai-apply', $product) }}', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData
+            })
+            .then(async response => {
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Unable to apply the selected image.');
+                }
+
+                status.className = 'text-success small';
+                status.textContent = 'Main image updated successfully.';
+                const currentImagePreview = document.getElementById('current-product-image');
+                if (currentImagePreview) {
+                    currentImagePreview.src = data.image_url;
+                }
+                const currentImage = document.querySelector('input[name="image"]');
+                if (currentImage) {
+                    currentImage.value = '';
+                }
+            })
+            .catch((error) => {
+                status.className = 'text-danger small';
+                status.textContent = error.message;
+            });
         }
     });
 </script>

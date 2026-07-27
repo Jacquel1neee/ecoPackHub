@@ -85,6 +85,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
 
     // Products
+    Route::post('/products/{product}/ai-enhance', [AdminProductController::class, 'enhanceImages'])->name('products.ai-enhance');
+    Route::post('/products/{product}/ai-apply', [AdminProductController::class, 'applyAiImage'])->name('products.ai-apply');
+    Route::post('/products/{product?}/ai-description', [AdminProductController::class, 'generateDescription'])->name('products.ai-description');
     Route::resource('products', AdminProductController::class);
 
     // Categories
