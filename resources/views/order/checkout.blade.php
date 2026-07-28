@@ -128,6 +128,11 @@
                 <div class="card-body">
                     <!-- Loop through cart items -->
                     @foreach($items as $item)
+                        @php
+                            $basePrice = $item->variant->price ?? 0;
+                            $product = $item->variant->product;
+                            $finalPrice = $product->calculateDiscountedPrice($basePrice);
+                        @endphp
                         <div class="d-flex justify-content-between mb-2">
                             <span>
                                 {{ $item->variant->product->name ?? 'Product' }}
@@ -136,7 +141,7 @@
                                 @endif
                                 × {{ $item->quantity }}
                             </span>
-                            <span>RM {{ number_format($item->quantity * ($item->variant->price ?? 0), 2) }}</span>
+                            <span>RM {{ number_format($item->quantity * $finalPrice, 2) }}</span>
                         </div>
                     @endforeach
                     
