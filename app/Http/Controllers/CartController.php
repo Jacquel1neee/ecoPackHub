@@ -26,7 +26,11 @@ class CartController extends Controller
         $cart = $this->getCart();
         $items = $cart->items()->with('variant.product')->get();
         $total = $items->sum(function ($item) {
-            return $item->quantity * $item->variant->price;
+            $basePrice = $item->variant->price;
+            $product = $item->variant->product;
+            // Apply discount if active
+            $finalPrice = $product->calculateDiscountedPrice($basePrice);
+            return $item->quantity * $finalPrice;
         });
         
         return view('cart.index', compact('items', 'total'));

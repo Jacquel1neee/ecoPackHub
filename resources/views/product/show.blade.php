@@ -65,11 +65,20 @@
                     <div class="mb-3">
                         <span class="text-muted">Price Range: </span>
                         <span class="fw-bold" style="color: var(--primary-green); font-size: 1.3rem;">
-                            RM {{ number_format($product->min_price, 2) }}
-                            @if($product->min_price != $product->max_price)
-                                - RM {{ number_format($product->max_price, 2) }}
+                            RM {{ number_format($product->discounted_min_price, 2) }}
+                            @if($product->discounted_min_price != $product->discounted_max_price)
+                                - RM {{ number_format($product->discounted_max_price, 2) }}
                             @endif
                         </span>
+                        @if($product->has_active_discount)
+                            <br>
+                            <small class="text-muted" style="text-decoration: line-through;">
+                                Original: RM {{ number_format($product->min_price, 2) }} 
+                                @if($product->min_price != $product->max_price)
+                                    - RM {{ number_format($product->max_price, 2) }}
+                                @endif
+                            </small>
+                        @endif
                         <br>
                         <small class="text-muted">(Starting from {{ $product->variants->count() }} variants)</small>
                     </div>
@@ -175,10 +184,18 @@
                             </thead>
                             <tbody>
                                 @foreach($product->variants as $variant)
+                                    @php
+                                        $discountedPrice = $product->calculateDiscountedPrice($variant->price);
+                                    @endphp
                                     <tr>
                                         <td><strong>{{ $variant->size ?? 'Standard' }}</strong></td>
                                         <td>{{ $variant->packing_quantity }}</td>
-                                        <td style="color: var(--primary-green); font-weight: bold;">RM {{ number_format($variant->price, 2) }}</td>
+                                        <td style="color: var(--primary-green); font-weight: bold;">
+                                            RM {{ number_format($discountedPrice, 2) }}
+                                            @if($product->has_active_discount)
+                                                <br><small style="text-decoration: line-through; color: #999;">RM {{ number_format($variant->price, 2) }}</small>
+                                            @endif
+                                        </td>
                                         <td>
                                             @if($variant->stock > 0)
                                                 <span class="badge bg-success">{{ $variant->stock }} in stock</span>
@@ -284,11 +301,26 @@
     variantSelect.addEventListener('change', function() {
         const selectedOption = this.options[this.selectedIndex];
         if (this.value) {
-            const price = parseFloat(selectedOption.dataset.price);
+            const basePrice = parseFloat(selectedOption.dataset.price);
             const stock = parseInt(selectedOption.dataset.stock);
             const packing = selectedOption.dataset.packing;
             
-            priceDisplay.textContent = price.toFixed(2);
+            // Apply discount calculation
+            const hasDiscount = @json($product->has_active_discount);
+            const discountPrice = @json($product->discount_price ? (float) $product->discount_price : null);
+            const discountPercentage = @json($product->discount_percentage ? (float) $product->discount_percentage : null);
+            
+            let finalPrice = basePrice;
+            if (hasDiscount) {
+                if (discountPrice !== null) {
+                    finalPrice = Math.min(basePrice, discountPrice);
+                } else if (discountPercentage !== null) {
+                    const percentage = Math.max(0, Math.min(100, discountPercentage));
+                    finalPrice = Math.round(basePrice * (1 - (percentage / 100)) * 100) / 100;
+                }
+            }
+            
+            priceDisplay.textContent = finalPrice.toFixed(2);
             packingDisplay.textContent = '(' + packing + ')';
             stockDisplay.textContent = 'Stock: ' + stock;
             

@@ -39,6 +39,11 @@
                                 </thead>
                                 <tbody>
                                     @foreach($items as $item)
+                                        @php
+                                            $basePrice = $item->variant->price;
+                                            $product = $item->variant->product;
+                                            $finalPrice = $product->calculateDiscountedPrice($basePrice);
+                                        @endphp
                                         <tr>
                                             <td>
                                                 <div class="d-flex align-items-center">
@@ -63,7 +68,10 @@
                                             </td>
                                             <td>
                                                 @if($item->variant)
-                                                    RM {{ number_format($item->variant->price, 2) }}
+                                                    <span style="color: var(--primary-green); font-weight: bold;">RM {{ number_format($finalPrice, 2) }}</span>
+                                                    @if($product->has_active_discount)
+                                                        <br><small style="text-decoration: line-through; color: #999;">RM {{ number_format($basePrice, 2) }}</small>
+                                                    @endif
                                                 @else
                                                     <span class="text-muted">N/A</span>
                                                 @endif
@@ -83,7 +91,7 @@
                                             <td>
                                                 @if($item->variant)
                                                     <span class="fw-bold" style="color: var(--primary-green);">
-                                                        RM {{ number_format($item->quantity * $item->variant->price, 2) }}
+                                                        RM {{ number_format($item->quantity * $finalPrice, 2) }}
                                                     </span>
                                                 @else
                                                     <span class="text-muted">N/A</span>

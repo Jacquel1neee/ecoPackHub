@@ -28,9 +28,13 @@ class OrderController extends Controller
         // Get cart items with variant and product details
         $items = $cart->items()->with('variant.product')->get();
         
-        // Calculate subtotal
+        // Calculate subtotal with discount applied
         $subtotal = $items->sum(function ($item) {
-            return $item->quantity * ($item->variant->price ?? 0);
+            $basePrice = $item->variant->price ?? 0;
+            $product = $item->variant->product;
+            // Apply discount if active
+            $finalPrice = $product->calculateDiscountedPrice($basePrice);
+            return $item->quantity * $finalPrice;
         });
         $shippingFee = $this->calculateShippingFee($items);
         $total = $subtotal + $shippingFee;
@@ -79,10 +83,14 @@ class OrderController extends Controller
                 ->with('error', 'Your cart is empty!');
         }
 
-        // ===== 3. Calculate subtotal =====
-        $items = $cart->items()->with('variant')->get();
+        // ===== 3. Calculate subtotal with discount =====
+        $items = $cart->items()->with('variant.product')->get();
         $subtotal = $items->sum(function ($item) {
-            return $item->quantity * ($item->variant->price ?? 0);
+            $basePrice = $item->variant->price ?? 0;
+            $product = $item->variant->product;
+            // Apply discount if active
+            $finalPrice = $product->calculateDiscountedPrice($basePrice);
+            return $item->quantity * $finalPrice;
         });
 
         // ===== 4. Calculate shipping fee =====

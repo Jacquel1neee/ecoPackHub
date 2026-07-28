@@ -145,7 +145,7 @@
                     <!-- Subtotal -->
                     <div class="d-flex justify-content-between">
                         <span>Subtotal</span>
-                        <span>RM {{ number_format($total, 2) }}</span>
+                        <span>RM {{ number_format($subtotal, 2) }}</span>
                     </div>
                     
                     <!-- Shipping Fee (dynamically updated) -->
