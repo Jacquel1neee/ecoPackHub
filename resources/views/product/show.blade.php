@@ -30,8 +30,8 @@
                     @endphp
 
                     @if(count($productImages) > 0)
-                        <div class="position-relative">
-                            <img id="product-image-slider" src="{{ $productImages[0] }}" alt="{{ $product->name }}" class="img-fluid" style="max-height: 400px; object-fit: contain; border-radius: 12px;">
+                        <div class="position-relative d-flex align-items-center justify-content-center rounded-3" style="min-height: 400px; background: #f8f9fa; padding: 16px;">
+                            <img id="product-image-slider" src="{{ $productImages[0] }}" alt="{{ $product->name }}" class="img-fluid" style="max-width: 100%; max-height: 400px; width: auto; height: auto; object-fit: contain; display: block; border-radius: 12px;">
                             @if(count($productImages) > 1)
                                 <button id="prev-image-btn" type="button" class="btn btn-secondary position-absolute top-50 start-0 translate-middle-y" style="opacity: 0.8; border-radius: 50%; width: 40px; height: 40px;">&#8249;</button>
                                 <button id="next-image-btn" type="button" class="btn btn-secondary position-absolute top-50 end-0 translate-middle-y" style="opacity: 0.8; border-radius: 50%; width: 40px; height: 40px;">&#8250;</button>
@@ -41,7 +41,9 @@
                             <div id="image-dots" class="d-flex justify-content-center gap-2 mt-3"></div>
                         @endif
                     @else
-                        <img id="product-image-slider" src="{{ asset('images/no-image.png') }}" alt="{{ $product->name }}" class="img-fluid" style="max-height: 400px; object-fit: contain; border-radius: 12px;">
+                        <div class="d-flex align-items-center justify-content-center rounded-3" style="min-height: 400px; background: #f8f9fa; padding: 16px;">
+                            <img id="product-image-slider" src="{{ asset('images/no-image.png') }}" alt="{{ $product->name }}" class="img-fluid" style="max-width: 100%; max-height: 400px; width: auto; height: auto; object-fit: contain; display: block; border-radius: 12px;">
+                        </div>
                     @endif
                 </div>
             </div>
