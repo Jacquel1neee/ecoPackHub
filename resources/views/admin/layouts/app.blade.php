@@ -198,6 +198,11 @@
             <a href="{{ route('admin.categories.index') }}" class="nav-link {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}">
                 <i class="fas fa-th-large"></i> <span>Categories</span>
             </a>
+
+            <!-- Options -->
+            <a href="{{ route('admin.packing-quantity-options.index') }}" class="nav-link {{ request()->routeIs('admin.packing-quantity-options.*') ? 'active' : '' }}">
+                <i class="fas fa-list-ul"></i> <span>Option</span>
+            </a>
             
             <!-- ===== VENDORS ===== -->
             <a href="{{ route('admin.vendors.index') }}" class="nav-link {{ request()->routeIs('admin.vendors.*') ? 'active' : '' }}">

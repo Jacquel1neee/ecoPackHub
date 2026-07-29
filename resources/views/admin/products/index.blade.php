@@ -76,17 +76,33 @@
                                 @endif
                             </td>
                             <td>
+                                <div class="mb-2">
+                                    @forelse($product->vendors as $vendor)
+                                        <span class="badge bg-info me-1 mb-1">{{ $vendor->name }}</span>
+                                    @empty
+                                        <span class="text-muted small">No vendors assigned</span>
+                                    @endforelse
+                                </div>
                                 @forelse($product->variants as $variant)
+                                    @php
+                                        $vendorAssignment = $product->vendors->firstWhere('id', $variant->vendor_id);
+                                        $vendorOption = $vendorAssignment?->pivot?->packing_quantity_option_id
+                                            ? $packingQuantityOptions->get($vendorAssignment->pivot->packing_quantity_option_id)?->name
+                                            : null;
+                                    @endphp
                                     <div class="mb-2 pb-2 border-bottom">
                                         <div class="fw-bold">
                                             {{ $variant->size ?: 'Standard' }}
-                                            @if($variant->packing_quantity)
-                                                <span class="text-muted">({{ $variant->packing_quantity }})</span>
+                                            @if($vendorOption || $variant->packing_quantity)
+                                                <span class="text-muted">({{ $vendorOption ?? $variant->packing_quantity }})</span>
                                             @endif
                                         </div>
                                         <div class="small">Vendor: {{ $variant->vendor->name ?? 'No vendor' }}</div>
                                         <div class="small">Sell Price: RM {{ number_format((float) $variant->price, 2) }}</div>
                                         <div class="small text-muted">Cost Price: RM {{ number_format((float) $variant->vendor_price, 2) }}</div>
+                                        <div class="small text-muted">
+                                            Quantity: {{ (int) ($variant->vendor_quantity ?? $product->vendors->firstWhere('id', $variant->vendor_id)?->pivot?->quantity ?? 0) }}
+                                        </div>
                                     </div>
                                 @empty
                                     <span class="text-muted">No variants assigned</span>

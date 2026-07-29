@@ -15,13 +15,14 @@ class Product extends Model
         'material', 'image', 'image_path', 'image_path2', 
         'image_path3', 'image_path4', 'image_path5', 
         'image_path6', 'image_path7', 'product_group',
-        'discount_price', 'discount_percentage', 'is_discount_active'
+        'discount_price', 'discount_percentage', 'is_discount_active', 'show_price_on_homepage'
     ];
 
     protected $casts = [
         'discount_price' => 'decimal:2',
         'discount_percentage' => 'decimal:2',
         'is_discount_active' => 'boolean',
+        'show_price_on_homepage' => 'boolean',
     ];
 
     /**
@@ -54,7 +55,7 @@ class Product extends Model
     public function vendors(): BelongsToMany
     {
         return $this->belongsToMany(Vendor::class, 'product_vendor')
-                    ->withPivot('price', 'is_preferred')
+                    ->withPivot('price', 'quantity', 'packing_quantity_option_id', 'is_preferred')
                     ->withTimestamps();
     }
 
@@ -63,7 +64,13 @@ class Product extends Model
      */
     public function getPreferredVendorAttribute()
     {
-        return $this->vendors()->wherePivot('is_preferred', true)->first();
+        if ($this->relationLoaded('vendors')) {
+            $preferred = $this->vendors->firstWhere('pivot.is_preferred', true);
+
+            return $preferred ?: $this->vendors->first();
+        }
+
+        return $this->vendors()->wherePivot('is_preferred', true)->first() ?: $this->vendors()->first();
     }
 
     /**

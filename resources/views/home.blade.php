@@ -368,6 +368,25 @@
                                                         @endif
                                                     @endif
                                                 </span>
+                                                    @if($product->show_price_on_homepage)
+                                                        <span class="fw-bold" style="color: var(--primary-green); font-size: 1rem;">
+                                                            @if($product->has_active_discount)
+                                                                <small class="text-muted fw-normal text-decoration-line-through" style="font-size: 0.7rem;">RM {{ number_format($product->min_price, 2) }}@if($product->min_price != $product->max_price) - RM {{ number_format($product->max_price, 2) }}@endif</small>
+                                                                <br>
+                                                                RM {{ number_format($product->discounted_min_price, 2) }}
+                                                                @if($product->discounted_min_price != $product->discounted_max_price)
+                                                                    <small class="text-muted fw-normal" style="font-size: 0.7rem;">- RM {{ number_format($product->discounted_max_price, 2) }}</small>
+                                                                @endif
+                                                            @else
+                                                                RM {{ number_format($product->min_price, 2) }}
+                                                                @if($product->min_price != $product->max_price)
+                                                                    <small class="text-muted fw-normal" style="font-size: 0.7rem;">- RM {{ number_format($product->max_price, 2) }}</small>
+                                                                @endif
+                                                            @endif
+                                                        </span>
+                                                    @else
+                                                        <span class="fw-semibold text-muted" style="font-size: 0.85rem;">Price hidden</span>
+                                                    @endif
                                                 <small class="text-muted" style="font-size: 0.6rem;">{{ $product->variants->first()->packing_quantity ?? '' }}</small>
                                             </div>
                                             
@@ -460,6 +479,18 @@
                                                         RM {{ number_format($product->min_price, 2) }}
                                                     @endif
                                                 </span>
+                                                    @if($product->show_price_on_homepage)
+                                                        <span class="fw-bold" style="color: var(--primary-green); font-size: 0.85rem;">
+                                                            @if($product->has_active_discount)
+                                                                <small class="text-muted text-decoration-line-through me-1">RM {{ number_format($product->min_price, 2) }}</small>
+                                                                RM {{ number_format($product->discounted_min_price, 2) }}
+                                                            @else
+                                                                RM {{ number_format($product->min_price, 2) }}
+                                                            @endif
+                                                        </span>
+                                                    @else
+                                                        <span class="fw-semibold text-muted" style="font-size: 0.75rem;">Price hidden</span>
+                                                    @endif
                                                 <small class="text-muted" style="font-size: 0.6rem;">{{ $product->variants->count() }} variants</small>
                                             </div>
                                         </div>

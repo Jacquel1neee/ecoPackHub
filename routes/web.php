@@ -10,6 +10,7 @@ use App\Http\Controllers\EnquiryController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Admin\PackingQuantityOptionController as AdminPackingQuantityOptionController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\CategoryController as CategoryController;
@@ -92,6 +93,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     // Categories
     Route::resource('categories', CategoryController::class);
+
+    // Options
+    Route::resource('packing-quantity-options', AdminPackingQuantityOptionController::class);
 
     // ===== VENDORS =====
     Route::resource('vendors', AdminVendorController::class);

@@ -2,6 +2,29 @@
 
 @section('content')
 <div class="container py-4">
+    @php
+        $vendorAssignments = $product->vendors->keyBy('id');
+
+        $resolveVendorAssignment = function ($variant) use ($product, $vendorAssignments) {
+            $assignment = $vendorAssignments->get($variant->vendor_id);
+
+            if (! $assignment && $variant->vendor_id) {
+                $assignment = $product->vendors->firstWhere('id', $variant->vendor_id);
+            }
+
+            if (! $assignment && $variant->packing_quantity_option_id) {
+                $assignment = $product->vendors->first(function ($vendor) use ($variant) {
+                    return (int) ($vendor->pivot->packing_quantity_option_id ?? 0) === (int) $variant->packing_quantity_option_id;
+                });
+            }
+
+            if (! $assignment && $product->vendors->count() === 1) {
+                $assignment = $product->vendors->first();
+            }
+
+            return $assignment;
+        };
+    @endphp
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('home') }}">Home</a></li>
@@ -61,6 +84,13 @@
 
                     <p class="text-muted">{{ $product->description }}</p>
 
+                    <div id="product-script-data"
+                        data-images='@json($productImages)'
+                        data-has-discount="{{ $product->has_active_discount ? 1 : 0 }}"
+                        data-discount-price="{{ $product->discount_price !== null ? (float) $product->discount_price : '' }}"
+                        data-discount-percentage="{{ $product->discount_percentage !== null ? (float) $product->discount_percentage : '' }}">
+                    </div>
+
                     <!-- Price Range -->
                     <div class="mb-3">
                         <span class="text-muted">Price Range: </span>
@@ -89,20 +119,28 @@
                         <input type="hidden" name="product_id" value="{{ $product->id }}">
                         
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Select Size/Variant</label>
+                            <label class="form-label fw-bold">Select Variant</label>
                             <select name="variant_id" id="variant-select" class="form-select" required style="border-radius: 12px; border: 2px solid #e0e0e0;">
                                 <option value="">-- Please select --</option>
                                 @foreach($product->variants as $variant)
+                                    @php
+                                        $vendorAssignment = $resolveVendorAssignment($variant);
+                                        $vendorQuantity = $variant->vendor_quantity ?? $vendorAssignment?->pivot?->quantity;
+                                        if ($vendorQuantity === null && preg_match('/\d+/', (string) $variant->packing_quantity, $qtyMatch)) {
+                                            $vendorQuantity = (int) $qtyMatch[0];
+                                        }
+                                        $vendorQuantity = (int) ($vendorQuantity ?? 0);
+                                        $vendorOption = $packingQuantityOptions->get($variant->packing_quantity_option_id ?? $vendorAssignment?->pivot?->packing_quantity_option_id)?->name
+                                            ?? $variant->packingQuantityDisplay
+                                            ?? '';
+                                    @endphp
                                     <option value="{{ $variant->id }}" 
                                             data-price="{{ $variant->price }}"
                                             data-stock="{{ $variant->stock }}"
-                                            data-packing="{{ $variant->packing_quantity }}">
-                                        {{ $variant->size ?? 'Standard' }} - {{ $variant->packing_quantity }} 
-                                        @if($variant->stock > 0)
-                                            <span class="text-success">(In Stock: {{ $variant->stock }})</span>
-                                        @else
-                                            <span class="text-danger">(Out of Stock)</span>
-                                        @endif
+                                            data-packing="{{ $vendorQuantity }}"
+                                            data-packing-option="{{ $vendorOption }}"
+                                            data-vendor-price="{{ $variant->vendor_price }}">
+                                        {{ $variant->size ?? 'Standard' }} - Qty {{ (int) $vendorQuantity }} {{ $vendorOption ? '(' . $vendorOption . ')' : '' }}
                                     </option>
                                 @endforeach
                             </select>
@@ -124,10 +162,10 @@
                         </div>
 
                         <div class="mb-3" id="price-display">
-                            <span class="fw-bold" style="color: var(--primary-green); font-size: 1.5rem;">
-                                RM <span id="selected-price">0.00</span>
-                            </span>
-                            <span class="text-muted ms-2" id="packing-display"></span>
+                            <div class="fw-bold" style="color: var(--primary-green); font-size: 1.5rem;">
+                                Price: RM <span id="selected-price">0.00</span>
+                            </div>
+                            <div class="text-muted small mt-1" id="packing-display"></div>
                         </div>
 
                         <button type="submit" class="btn w-100 mt-2" id="add-to-cart-btn" 
@@ -177,8 +215,8 @@
                             <thead>
                                 <tr>
                                     <th>Size</th>
-                                    <th>Packing Quantity</th>
-                                    <th>Price</th>
+                                    <th>Vendor Quantity</th>
+                                    <th>Product Price</th>
                                     <th>Stock</th>
                                 </tr>
                             </thead>
@@ -186,10 +224,19 @@
                                 @foreach($product->variants as $variant)
                                     @php
                                         $discountedPrice = $product->calculateDiscountedPrice($variant->price);
+                                        $vendorAssignment = $resolveVendorAssignment($variant);
+                                        $vendorQuantity = $variant->vendor_quantity ?? $vendorAssignment?->pivot?->quantity;
+                                        if ($vendorQuantity === null && preg_match('/\d+/', (string) $variant->packing_quantity, $qtyMatch)) {
+                                            $vendorQuantity = (int) $qtyMatch[0];
+                                        }
+                                        $vendorQuantity = (int) ($vendorQuantity ?? 0);
+                                        $vendorOption = $packingQuantityOptions->get($variant->packing_quantity_option_id ?? $vendorAssignment?->pivot?->packing_quantity_option_id)?->name
+                                            ?? $variant->packingQuantityDisplay
+                                            ?? '';
                                     @endphp
                                     <tr>
                                         <td><strong>{{ $variant->size ?? 'Standard' }}</strong></td>
-                                        <td>{{ $variant->packing_quantity }}</td>
+                                        <td>{{ $vendorQuantity }} {{ $vendorOption ? '(' . $vendorOption . ')' : '' }}</td>
                                         <td style="color: var(--primary-green); font-weight: bold;">
                                             RM {{ number_format($discountedPrice, 2) }}
                                             @if($product->has_active_discount)
@@ -226,7 +273,8 @@
     const prevImageBtn = document.getElementById('prev-image-btn');
     const nextImageBtn = document.getElementById('next-image-btn');
     const imageDotsContainer = document.getElementById('image-dots');
-    const productImages = @json($productImages);
+    const productScriptData = document.getElementById('product-script-data');
+    const productImages = JSON.parse(productScriptData?.dataset.images || '[]');
     let currentProductImageIndex = 0;
     let imageInterval = null;
 
@@ -304,11 +352,12 @@
             const basePrice = parseFloat(selectedOption.dataset.price);
             const stock = parseInt(selectedOption.dataset.stock);
             const packing = selectedOption.dataset.packing;
+            const packingOption = selectedOption.dataset.packingOption;
             
             // Apply discount calculation
-            const hasDiscount = @json($product->has_active_discount);
-            const discountPrice = @json($product->discount_price ? (float) $product->discount_price : null);
-            const discountPercentage = @json($product->discount_percentage ? (float) $product->discount_percentage : null);
+            const hasDiscount = productScriptData?.dataset.hasDiscount === '1';
+            const discountPrice = productScriptData?.dataset.discountPrice ? parseFloat(productScriptData.dataset.discountPrice) : null;
+            const discountPercentage = productScriptData?.dataset.discountPercentage ? parseFloat(productScriptData.dataset.discountPercentage) : null;
             
             let finalPrice = basePrice;
             if (hasDiscount) {
@@ -321,7 +370,7 @@
             }
             
             priceDisplay.textContent = finalPrice.toFixed(2);
-            packingDisplay.textContent = '(' + packing + ')';
+            packingDisplay.textContent = packing ? 'Qty: ' + packing + (packingOption ? ' (' + packingOption + ')' : '') : '';
             stockDisplay.textContent = 'Stock: ' + stock;
             
             // Check stock

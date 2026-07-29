@@ -106,8 +106,8 @@
                                     </span>
                                 </a>
                                 <div class="card-body d-flex flex-column p-3">
-                                    <a href="{{ route('product.show', $product) }}" class="text-decoration-none text-dark">
-                                        <h6 class="card-title fw-semibold mb-1" style="font-size: 0.9rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.4rem;">
+                                        <a href="{{ route('product.show', $product) }}" class="text-decoration-none text-dark">
+                                            <h6 class="card-title fw-semibold mb-1" style="font-size: 0.9rem; display: -webkit-box; line-clamp: 2; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.4rem;">
                                             {{ $product->name }}
                                         </h6>
                                     </a>

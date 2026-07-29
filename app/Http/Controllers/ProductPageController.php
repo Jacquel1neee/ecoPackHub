@@ -13,7 +13,7 @@ class ProductPageController extends Controller
         $searchTerm = $request->input('search');
 
         // Get all products (for AI suggestion)
-        $allProducts = Product::with('variants')->get();
+        $allProducts = Product::with(['variants', 'vendors'])->get();
 
         // ===== SEARCH FUNCTIONALITY =====
         if ($searchTerm) {
@@ -23,7 +23,7 @@ class ProductPageController extends Controller
                     ->orWhere('code', 'LIKE', "%{$searchTerm}%")
                     ->orWhere('description', 'LIKE', "%{$searchTerm}%")
                     ->orWhere('material', 'LIKE', "%{$searchTerm}%")
-                    ->with('variants');
+                    ->with(['variants', 'vendors']);
             }])->get();
 
             // Only keep categories with products
@@ -36,11 +36,11 @@ class ProductPageController extends Controller
         } else {
             // No search: get all categories with products
             $categories = Category::with(['products' => function($query) {
-                $query->with('variants');
+                $query->with(['variants', 'vendors']);
             }])->get();
 
             // Get all products for AI suggestion
-            $allProducts = Product::with('variants')->get();
+            $allProducts = Product::with(['variants', 'vendors'])->get();
         }
 
         return view('products.index', compact('categories', 'allProducts', 'searchTerm'));

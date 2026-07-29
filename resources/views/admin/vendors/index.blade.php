@@ -50,11 +50,11 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <span class="badge bg-info">{{ $vendor->products->count() }}</span>
+                                    <span class="badge bg-info">{{ $vendor->products_count }}</span>
                                 </td>
                                 <td>
                                     <a href="{{ route('admin.vendors.edit', $vendor) }}" 
-                                       class="btn btn-sm btn-primary">
+                                       class="btn btn-sm btn-primary" title="Manage products & prices">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <form action="{{ route('admin.vendors.destroy', $vendor) }}" 

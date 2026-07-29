@@ -86,6 +86,13 @@
 
             <small class="text-muted d-block mb-2">Set either discount price or discount percentage. Tick activate to apply on homepage cards.</small>
 
+            <div class="mb-3 form-check">
+                <input type="checkbox" name="show_price_on_homepage" value="1" class="form-check-input" id="show_price_on_homepage" {{ old('show_price_on_homepage', $product->show_price_on_homepage ?? true) ? 'checked' : '' }}>
+                <label class="form-check-label" for="show_price_on_homepage">
+                    Show Price on Main Page
+                </label>
+            </div>
+
             <div class="mb-3">
                 <label class="form-label">Current Image</label>
                 @if($product->image_url)
@@ -130,20 +137,37 @@
             <h5 class="fw-bold mb-3" style="color: var(--primary-green);">
                 <i class="fas fa-layer-group me-2"></i>Product Variants (Sizes/Prices)
             </h5>
-            <p class="text-muted small mb-3">Each variant has one vendor price (cost) and one product price (selling price).</p>
+            <p class="text-muted small mb-3">Each variant uses a variant option only. Vendor quantity is set in the vendor admin screen, and vendor price is shown here as read-only while customer price stays editable.</p>
 
-            <div id="variants-container">
+            <div id="variants-container" data-variant-count="{{ $product->variants->count() }}">
                 @foreach($product->variants as $index => $variant)
                     <div class="variant-item row g-3 mb-3 p-3" style="background: #f8f9fa; border-radius: 12px; border: 1px solid #e0e0e0;">
+                        <input type="hidden" name="variants[{{ $index }}][id]" value="{{ $variant->id }}">
+                        @php
+                            $currentVendorAssignment = $product->vendors->firstWhere('id', old('variants.'.$index.'.vendor_id', $variant->vendor_id));
+                            $currentVendorQuantity = old('variants.'.$index.'.vendor_quantity', $variant->vendor_quantity ?? $currentVendorAssignment?->pivot?->quantity ?? '');
+                            if ($currentVendorQuantity === '' && preg_match('/\d+/', (string) $variant->packing_quantity, $qtyMatch)) {
+                                $currentVendorQuantity = (int) $qtyMatch[0];
+                            }
+                            $currentOptionId = old('variants.'.$index.'.packing_quantity_option_id', $variant->packing_quantity_option_id ?? $currentVendorAssignment?->pivot?->packing_quantity_option_id);
+                            $currentOptionName = $currentOptionId ? ($packingQuantityOptions->firstWhere('id', $currentOptionId)?->name ?? '') : '';
+                            $currentQuantifierDisplay = trim(
+                                ($currentVendorQuantity !== '' ? (string) ((int) $currentVendorQuantity) : '')
+                                . ' '
+                                . $currentOptionName
+                            );
+                        @endphp
                         <div class="col-md-1">
                             <label class="form-label small">Size</label>
                             <input type="text" name="variants[{{ $index }}][size]" class="form-control" 
                                    placeholder="e.g., 600ml, 9inch" value="{{ old('variants.'.$index.'.size', $variant->size) }}">
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label small">Packing Quantity *</label>
-                            <input type="text" name="variants[{{ $index }}][packing_quantity]" class="form-control" 
-                                   placeholder="e.g., 400 pcs/ctn" value="{{ old('variants.'.$index.'.packing_quantity', $variant->packing_quantity) }}" required>
+                        <div class="col-md-3">
+                            <label class="form-label small">Quantifier (Vendor Qty + Option)</label>
+                            <input type="text" class="form-control variant-quantifier-display" value="{{ $currentQuantifierDisplay }}" placeholder="Set in Vendor page" readonly>
+                            <input type="hidden" name="variants[{{ $index }}][packing_quantity_option_id]" class="variant-packing-option-id" value="{{ $currentOptionId }}">
+                            <input type="hidden" name="variants[{{ $index }}][packing_quantity]" class="variant-packing-quantity-value" value="{{ old('variants.'.$index.'.packing_quantity', $currentOptionName ?: ($variant->packingQuantityDisplay ?: $currentOptionName)) }}">
+                            <input type="hidden" name="variants[{{ $index }}][vendor_quantity]" class="variant-vendor-quantity" value="{{ old('variants.'.$index.'.vendor_quantity', $currentVendorQuantity !== '' ? (int) $currentVendorQuantity : '') }}">
                         </div>
                         <div class="col-md-2">
                             <label class="form-label small">Product Price (RM) *</label>
@@ -152,19 +176,37 @@
                         </div>
                         <div class="col-md-2">
                             <label class="form-label small">Vendor *</label>
-                            <select name="variants[{{ $index }}][vendor_id]" class="form-select" required>
-                                <option value="">Select Vendor</option>
-                                @foreach($vendors as $vendor)
-                                    <option value="{{ $vendor->id }}" {{ old('variants.'.$index.'.vendor_id', $variant->vendor_id) == $vendor->id ? 'selected' : '' }}>{{ $vendor->name }}</option>
-                                @endforeach
+                            <select name="variants[{{ $index }}][vendor_id]" class="form-select variant-vendor-select" required>
+                                @if($product->vendors->isEmpty())
+                                    <option value="">No vendor assignment found. Please assign in Vendor page first.</option>
+                                @else
+                                    <option value="">Select Vendor</option>
+                                    @foreach($product->vendors as $vendor)
+                                        @php
+                                            $vendorPrice = (int) $vendor->id === (int) $variant->vendor_id
+                                                ? ($variant->vendor_price ?? ($vendor->pivot->price ?? ''))
+                                                : ($vendor->pivot->price ?? '');
+                                            $vendorQuantity = (int) $vendor->id === (int) $variant->vendor_id
+                                                ? ($variant->vendor_quantity ?? ($vendor->pivot->quantity ?? ''))
+                                                : ($vendor->pivot->quantity ?? '');
+                                            $vendorOptionId = (int) $vendor->id === (int) $variant->vendor_id
+                                                ? ($variant->packing_quantity_option_id ?? ($vendor->pivot->packing_quantity_option_id ?? ''))
+                                                : ($vendor->pivot->packing_quantity_option_id ?? '');
+                                            $vendorOptionName = $vendorOptionId ? ($packingQuantityOptions->firstWhere('id', $vendorOptionId)?->name ?? '') : '';
+                                        @endphp
+                                        <option value="{{ $vendor->id }}" data-price="{{ $vendorPrice }}" data-quantity="{{ $vendorQuantity }}" data-option-id="{{ $vendorOptionId }}" data-option-name="{{ $vendorOptionName }}" {{ old('variants.'.$index.'.vendor_id', $variant->vendor_id) == $vendor->id ? 'selected' : '' }}>
+                                            {{ $vendor->name }}
+                                        </option>
+                                    @endforeach
+                                @endif
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label small">Vendor Price (RM) *</label>
-                            <input type="number" step="0.01" name="variants[{{ $index }}][vendor_price]" class="form-control" 
-                                   placeholder="30.00" value="{{ old('variants.'.$index.'.vendor_price', $variant->vendor_price) }}" required>
+                            <label class="form-label small">Vendor Price (read-only)</label>
+                            <input type="text" class="form-control variant-vendor-price-display" value="{{ old('variants.'.$index.'.vendor_price', $variant->vendor_price !== null ? number_format((float) $variant->vendor_price, 2, '.', '') : '') }}" readonly>
+                            <input type="hidden" name="variants[{{ $index }}][vendor_price]" class="variant-vendor-price" value="{{ old('variants.'.$index.'.vendor_price', $variant->vendor_price) }}">
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-1">
                             <label class="form-label small">Stock *</label>
                             <input type="number" name="variants[{{ $index }}][stock]" class="form-control" 
                                    placeholder="100" value="{{ old('variants.'.$index.'.stock', $variant->stock) }}" required>
@@ -193,8 +235,80 @@
 </div>
 
 <script>
+    function initializeVariantRow(variantItem) {
+        const vendorSelect = variantItem.querySelector('.variant-vendor-select');
+        const priceInput = variantItem.querySelector('input[name*="[price]"]');
+        const vendorPriceInput = variantItem.querySelector('.variant-vendor-price');
+        const vendorPriceDisplay = variantItem.querySelector('.variant-vendor-price-display');
+        const quantifierDisplay = variantItem.querySelector('.variant-quantifier-display');
+        const packingOptionIdInput = variantItem.querySelector('.variant-packing-option-id');
+        const packingValueInput = variantItem.querySelector('.variant-packing-quantity-value');
+        const vendorQuantityInput = variantItem.querySelector('.variant-vendor-quantity');
+
+        const syncVendorPrice = () => {
+            if (!vendorSelect || !vendorPriceInput || !priceInput) {
+                return;
+            }
+
+            const option = vendorSelect.options[vendorSelect.selectedIndex];
+            const vendorPrice = option?.dataset.price || priceInput.value || '';
+
+            if (!vendorSelect.value) {
+                return;
+            }
+
+            if (!vendorPrice && (vendorPriceInput.value || vendorPriceDisplay?.value)) {
+                return;
+            }
+
+            vendorPriceInput.value = vendorPrice;
+            if (vendorPriceDisplay) {
+                vendorPriceDisplay.value = vendorPrice ? Number(vendorPrice).toFixed(2) : '';
+            }
+        };
+
+        const syncQuantifier = () => {
+            if (!vendorSelect || !packingValueInput) {
+                return;
+            }
+
+            const option = vendorSelect.options[vendorSelect.selectedIndex];
+            const vendorQuantity = option?.dataset.quantity || '';
+            const optionId = option?.dataset.optionId || '';
+            const optionName = option?.dataset.optionName || '';
+                const qtyPrefix = vendorQuantity !== '' ? String(parseInt(vendorQuantity, 10)) : '';
+                const quantifier = [qtyPrefix, optionName].filter(Boolean).join(' ');
+
+            if (!vendorSelect.value) {
+                return;
+            }
+
+            if (!quantifier && !optionId && !optionName && (quantifierDisplay?.value || packingValueInput.value)) {
+                return;
+            }
+
+            if (quantifierDisplay) {
+                quantifierDisplay.value = quantifier;
+            }
+            if (packingOptionIdInput) {
+                packingOptionIdInput.value = optionId;
+            }
+            if (vendorQuantityInput) {
+                vendorQuantityInput.value = vendorQuantity !== '' ? String(parseInt(vendorQuantity, 10)) : '';
+            }
+            packingValueInput.value = optionName;
+        };
+
+        vendorSelect?.addEventListener('change', syncVendorPrice);
+        priceInput?.addEventListener('input', syncVendorPrice);
+        vendorSelect?.addEventListener('change', syncQuantifier);
+        syncVendorPrice();
+        syncQuantifier();
+    }
+
     // ===== Variant Management =====
-    let variantIndex = {{ $product->variants->count() }};
+    const variantsContainer = document.getElementById('variants-container');
+    let variantIndex = parseInt(variantsContainer?.dataset.variantCount || '0', 10);
 
     document.getElementById('add-variant-btn').addEventListener('click', function() {
         const container = document.getElementById('variants-container');
@@ -206,9 +320,12 @@
                 <label class="form-label small">Size</label>
                 <input type="text" name="variants[${variantIndex}][size]" class="form-control" placeholder="e.g., 600ml, 9inch" value="Standard">
             </div>
-            <div class="col-md-2">
-                <label class="form-label small">Packing Quantity *</label>
-                <input type="text" name="variants[${variantIndex}][packing_quantity]" class="form-control" placeholder="e.g., 400 pcs/ctn" required>
+            <div class="col-md-3">
+                <label class="form-label small">Quantifier (Vendor Qty + Option)</label>
+                <input type="text" class="form-control variant-quantifier-display" value="" placeholder="Set in Vendor page" readonly>
+                <input type="hidden" name="variants[${variantIndex}][packing_quantity_option_id]" class="variant-packing-option-id" value="">
+                <input type="hidden" name="variants[${variantIndex}][packing_quantity]" class="variant-packing-quantity-value" value="">
+                <input type="hidden" name="variants[${variantIndex}][vendor_quantity]" class="variant-vendor-quantity" value="">
             </div>
             <div class="col-md-2">
                 <label class="form-label small">Product Price (RM) *</label>
@@ -216,18 +333,29 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label small">Vendor *</label>
-                <select name="variants[${variantIndex}][vendor_id]" class="form-select" required>
-                    <option value="">Select Vendor</option>
-                    @foreach($vendors as $vendor)
-                        <option value="{{ $vendor->id }}">{{ $vendor->name }}</option>
-                    @endforeach
+                <select name="variants[${variantIndex}][vendor_id]" class="form-select variant-vendor-select" required>
+                    @if($product->vendors->isEmpty())
+                        <option value="">No vendor assignment found. Please assign in Vendor page first.</option>
+                    @else
+                        <option value="">Select Vendor</option>
+                        @foreach($product->vendors as $vendor)
+                            @php
+                                $vendorPrice = $vendor->pivot->price ?? '';
+                                $vendorQuantity = $vendor->pivot->quantity ?? '';
+                                $vendorOptionId = $vendor->pivot->packing_quantity_option_id ?? '';
+                                $vendorOptionName = $vendorOptionId ? ($packingQuantityOptions->firstWhere('id', $vendorOptionId)?->name ?? '') : '';
+                            @endphp
+                            <option value="{{ $vendor->id }}" data-price="{{ $vendorPrice }}" data-quantity="{{ $vendorQuantity }}" data-option-id="{{ $vendorOptionId }}" data-option-name="{{ $vendorOptionName }}">{{ $vendor->name }}</option>
+                        @endforeach
+                    @endif
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label small">Vendor Price (RM) *</label>
-                <input type="number" step="0.01" name="variants[${variantIndex}][vendor_price]" class="form-control" placeholder="30.00" required>
+                <label class="form-label small">Vendor Price (read-only)</label>
+                <input type="text" class="form-control variant-vendor-price-display" value="" readonly>
+                <input type="hidden" name="variants[${variantIndex}][vendor_price]" class="variant-vendor-price" value="">
             </div>
-            <div class="col-md-2">
+            <div class="col-md-1">
                 <label class="form-label small">Stock *</label>
                 <input type="number" name="variants[${variantIndex}][stock]" class="form-control" placeholder="100" value="0" required>
             </div>
@@ -238,6 +366,7 @@
             </div>
         `;
         container.appendChild(newVariant);
+        initializeVariantRow(newVariant);
         variantIndex++;
 
         document.querySelectorAll('.remove-variant').forEach(function(btn) {
@@ -269,6 +398,10 @@
             const btn = document.querySelector('.remove-variant');
             if (btn) btn.style.display = 'none';
         }
+
+        document.querySelectorAll('.variant-item').forEach((variantItem) => {
+            initializeVariantRow(variantItem);
+        });
     });
 
     document.getElementById('ai-description-btn').addEventListener('click', function() {
@@ -288,7 +421,7 @@
             formData.append('ai_image', aiImageInput.files[0]);
         }
 
-        fetch('{{ route('admin.products.ai-description', $product) }}', {
+        fetch("{{ route('admin.products.ai-description', $product) }}", {
             method: 'POST',
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             body: formData
@@ -329,7 +462,7 @@
         if (input.files && input.files[0]) {
             formData.append('ai_image', input.files[0]);
         }
-        fetch('{{ route('admin.products.ai-enhance', $product) }}', {
+        fetch("{{ route('admin.products.ai-enhance', $product) }}", {
             method: 'POST',
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             body: formData
@@ -381,7 +514,7 @@
             formData.append('_token', '{{ csrf_token() }}');
             formData.append('image_path', imagePath);
 
-            fetch('{{ route('admin.products.ai-apply', $product) }}', {
+            fetch("{{ route('admin.products.ai-apply', $product) }}", {
                 method: 'POST',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 body: formData

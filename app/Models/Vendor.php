@@ -29,7 +29,7 @@ class Vendor extends Model
     public function products(): BelongsToMany
     {
         return $this->belongsToMany(Product::class)
-                    ->withPivot('price', 'is_preferred')
+                    ->withPivot('price', 'quantity', 'packing_quantity_option_id', 'is_preferred')
                     ->withTimestamps();
     }
 

@@ -5,26 +5,30 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Category;
+use App\Models\PackingQuantityOption;
 use App\Models\ProductVariant;
 use App\Models\Vendor;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
     public function index()
     {
-        $products = Product::with(['category', 'variants.vendor'])
+        $products = Product::with(['category', 'variants.vendor', 'vendors'])
                            ->orderBy('created_at', 'desc')
                            ->paginate(20);
-        return view('admin.products.index', compact('products'));
+        $packingQuantityOptions = PackingQuantityOption::where('is_active', true)->get()->keyBy('id');
+        return view('admin.products.index', compact('products', 'packingQuantityOptions'));
     }
 
     public function create()
     {
         $categories = Category::all();
-        $vendors = Vendor::where('is_active', true)->get();
-        return view('admin.products.create', compact('categories', 'vendors'));
+        $vendors = Vendor::where('is_active', true)->orderBy('name')->get();
+        $packingQuantityOptions = PackingQuantityOption::where('is_active', true)->orderBy('name')->get();
+        return view('admin.products.create', compact('categories', 'vendors', 'packingQuantityOptions'));
     }
 
     public function store(Request $request)
@@ -38,14 +42,18 @@ class ProductController extends Controller
             'discount_price' => 'nullable|numeric|min:0',
             'discount_percentage' => 'nullable|numeric|min:0|max:100',
             'is_discount_active' => 'nullable|boolean',
+            'show_price_on_homepage' => 'nullable|boolean',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             // Variants validation
+            'variants' => 'nullable|array',
+            'variants.*.id' => 'nullable|integer|exists:product_variants,id',
             'variants.*.size' => 'nullable|string',
             'variants.*.packing_quantity' => 'required|string',
+            'variants.*.packing_quantity_option_id' => 'nullable|exists:packing_quantity_options,id',
             'variants.*.price' => 'required|numeric|min:0',
-            'variants.*.vendor_price' => 'required|numeric|min:0',
             'variants.*.stock' => 'required|integer|min:0',
             'variants.*.vendor_id' => 'required|exists:vendors,id',
+            'variants.*.vendor_quantity' => 'nullable|integer|min:0',
         ]);
 
         $productData = $request->except('image', 'variants', 'vendors');
@@ -53,6 +61,7 @@ class ProductController extends Controller
         $productData['discount_percentage'] = $request->filled('discount_percentage') ? $request->discount_percentage : null;
         $productData['is_discount_active'] = $request->boolean('is_discount_active')
             && ($productData['discount_price'] !== null || $productData['discount_percentage'] !== null);
+        $productData['show_price_on_homepage'] = $request->boolean('show_price_on_homepage', true);
 
         $product = new Product($productData);
 
@@ -65,21 +74,7 @@ class ProductController extends Controller
 
         $product->save();
 
-        // Save variants
-        if ($request->has('variants')) {
-            foreach ($request->variants as $variantData) {
-                if (!empty($variantData['packing_quantity']) && isset($variantData['price'])) {
-                    $product->variants()->create([
-                        'vendor_id' => $variantData['vendor_id'],
-                        'size' => $variantData['size'] ?? 'Standard',
-                        'packing_quantity' => $variantData['packing_quantity'],
-                        'price' => $variantData['price'],
-                        'vendor_price' => $variantData['vendor_price'],
-                        'stock' => $variantData['stock'] ?? 0,
-                    ]);
-                }
-            }
-        }
+        $this->syncProductVariants($product, $request->input('variants', []));
 
         return redirect()->route('admin.products.index')
             ->with('success', 'Product created successfully with ' . $product->variants->count() . ' variants!');
@@ -87,16 +82,47 @@ class ProductController extends Controller
 
     public function show(Product $product)
     {
-        $product->load('category', 'variants.vendor');
-        return view('admin.products.show', compact('product'));
+        $product->load('category', 'variants.vendor', 'vendors');
+        $usedOptionIds = $product->vendors
+            ->pluck('pivot.packing_quantity_option_id')
+            ->filter()
+            ->merge($product->variants->pluck('packing_quantity_option_id')->filter())
+            ->unique()
+            ->values();
+
+        $packingQuantityOptions = PackingQuantityOption::query()
+            ->where('is_active', true)
+            ->orWhereIn('id', $usedOptionIds)
+            ->get()
+            ->keyBy('id');
+        return view('admin.products.show', compact('product', 'packingQuantityOptions'));
     }
 
     public function edit(Product $product)
     {
         $categories = Category::all();
-        $vendors = Vendor::where('is_active', true)->get();
-        $product->load('variants.vendor');
-        return view('admin.products.edit', compact('product', 'categories', 'vendors'));
+        $product->load('vendors');
+        $assignedVendorIds = $product->vendors->pluck('id');
+        $product->load('variants');
+        $usedOptionIds = $product->vendors
+            ->pluck('pivot.packing_quantity_option_id')
+            ->filter()
+            ->merge($product->variants->pluck('packing_quantity_option_id')->filter())
+            ->unique()
+            ->values();
+
+        $vendors = Vendor::query()
+            ->where('is_active', true)
+            ->orWhereIn('id', $assignedVendorIds)
+            ->orderBy('name')
+            ->get();
+        $packingQuantityOptions = PackingQuantityOption::query()
+            ->where('is_active', true)
+            ->orWhereIn('id', $usedOptionIds)
+            ->orderBy('name')
+            ->get();
+        $product->load('variants.vendor', 'vendors');
+        return view('admin.products.edit', compact('product', 'categories', 'vendors', 'packingQuantityOptions'));
     }
 
     public function update(Request $request, Product $product)
@@ -110,14 +136,18 @@ class ProductController extends Controller
             'discount_price' => 'nullable|numeric|min:0',
             'discount_percentage' => 'nullable|numeric|min:0|max:100',
             'is_discount_active' => 'nullable|boolean',
+            'show_price_on_homepage' => 'nullable|boolean',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             // Variants validation
+            'variants' => 'nullable|array',
+            'variants.*.id' => 'nullable|integer|exists:product_variants,id',
             'variants.*.size' => 'nullable|string',
             'variants.*.packing_quantity' => 'required|string',
+            'variants.*.packing_quantity_option_id' => 'nullable|exists:packing_quantity_options,id',
             'variants.*.price' => 'required|numeric|min:0',
-            'variants.*.vendor_price' => 'required|numeric|min:0',
             'variants.*.stock' => 'required|integer|min:0',
             'variants.*.vendor_id' => 'required|exists:vendors,id',
+            'variants.*.vendor_quantity' => 'nullable|integer|min:0',
         ]);
 
         $productData = $request->except('image', 'variants', 'vendors');
@@ -125,6 +155,7 @@ class ProductController extends Controller
         $productData['discount_percentage'] = $request->filled('discount_percentage') ? $request->discount_percentage : null;
         $productData['is_discount_active'] = $request->boolean('is_discount_active')
             && ($productData['discount_price'] !== null || $productData['discount_percentage'] !== null);
+        $productData['show_price_on_homepage'] = $request->boolean('show_price_on_homepage', true);
 
         $product->fill($productData);
 
@@ -140,24 +171,7 @@ class ProductController extends Controller
 
         $product->save();
 
-        // ===== Update Variants =====
-        // Delete existing variants and recreate
-        $product->variants()->delete();
-
-        if ($request->has('variants')) {
-            foreach ($request->variants as $variantData) {
-                if (!empty($variantData['packing_quantity']) && isset($variantData['price'])) {
-                    $product->variants()->create([
-                        'vendor_id' => $variantData['vendor_id'],
-                        'size' => $variantData['size'] ?? 'Standard',
-                        'packing_quantity' => $variantData['packing_quantity'],
-                        'price' => $variantData['price'],
-                        'vendor_price' => $variantData['vendor_price'],
-                        'stock' => $variantData['stock'] ?? 0,
-                    ]);
-                }
-            }
-        }
+        $this->syncProductVariants($product, $request->input('variants', []));
 
         return redirect()->route('admin.products.index')
             ->with('success', 'Product updated successfully with ' . $product->variants->count() . ' variants!');
@@ -487,5 +501,115 @@ class ProductController extends Controller
         
         return redirect()->route('admin.products.index')
             ->with('success', 'Product deleted successfully!');
+    }
+
+    private function syncProductVariants(Product $product, array $variants): void
+    {
+        $keptVariantIds = [];
+
+        foreach ($variants as $variantData) {
+            if (empty($variantData['packing_quantity']) && empty($variantData['packing_quantity_option_id'])) {
+                continue;
+            }
+
+            if (! isset($variantData['price']) || empty($variantData['vendor_id'])) {
+                continue;
+            }
+
+            $packingQuantityOption = ! empty($variantData['packing_quantity_option_id'])
+                ? PackingQuantityOption::find($variantData['packing_quantity_option_id'])
+                : null;
+
+            if (! $packingQuantityOption && ! empty($variantData['packing_quantity'])) {
+                $packingQuantityOption = PackingQuantityOption::firstOrCreate(
+                    ['name' => $variantData['packing_quantity']],
+                    ['is_active' => true]
+                );
+            }
+
+            if (! $packingQuantityOption) {
+                continue;
+            }
+
+            $vendorPrice = $variantData['vendor_price'] ?? null;
+            if ($vendorPrice === null) {
+                $vendorPrice = DB::table('product_vendor')
+                    ->where('product_id', $product->id)
+                    ->where('vendor_id', $variantData['vendor_id'])
+                    ->value('price');
+            }
+
+            $vendorQuantity = $variantData['vendor_quantity'] ?? null;
+            if (($vendorQuantity === null || $vendorQuantity === '') && isset($variantData['vendor_id'])) {
+                $vendorQuantity = DB::table('product_vendor')
+                    ->where('product_id', $product->id)
+                    ->where('vendor_id', $variantData['vendor_id'])
+                    ->value('quantity');
+            }
+
+            if ($vendorPrice === null) {
+                $vendorPrice = $variantData['price'];
+            }
+
+            $payload = [
+                'size' => $variantData['size'] ?? 'Standard',
+                'packing_quantity' => $packingQuantityOption->name,
+                'packing_quantity_option_id' => $packingQuantityOption->id,
+                'price' => $variantData['price'],
+                'stock' => $variantData['stock'] ?? 0,
+                'vendor_id' => $variantData['vendor_id'],
+                'vendor_price' => $vendorPrice,
+                'vendor_quantity' => ($vendorQuantity !== null && $vendorQuantity !== '') ? (int) $vendorQuantity : null,
+            ];
+
+            if (! empty($variantData['id'])) {
+                $variant = $product->variants()->whereKey($variantData['id'])->first();
+
+                if ($variant) {
+                    $variant->update($payload);
+                    $keptVariantIds[] = $variant->id;
+
+                    DB::table('product_vendor')->updateOrInsert(
+                        [
+                            'product_id' => $product->id,
+                            'vendor_id' => $variantData['vendor_id'],
+                        ],
+                        [
+                            'price' => $vendorPrice,
+                            'quantity' => ($vendorQuantity !== null && $vendorQuantity !== '') ? (int) $vendorQuantity : null,
+                            'packing_quantity_option_id' => $packingQuantityOption->id,
+                            'is_preferred' => false,
+                            'updated_at' => now(),
+                            'created_at' => now(),
+                        ]
+                    );
+                    continue;
+                }
+            }
+
+            $variant = $product->variants()->create($payload);
+            $keptVariantIds[] = $variant->id;
+
+            DB::table('product_vendor')->updateOrInsert(
+                [
+                    'product_id' => $product->id,
+                    'vendor_id' => $variantData['vendor_id'],
+                ],
+                [
+                    'price' => $vendorPrice,
+                    'quantity' => ($vendorQuantity !== null && $vendorQuantity !== '') ? (int) $vendorQuantity : null,
+                    'packing_quantity_option_id' => $packingQuantityOption->id,
+                    'is_preferred' => false,
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ]
+            );
+        }
+
+        if (! empty($keptVariantIds)) {
+            $product->variants()->whereNotIn('id', $keptVariantIds)->delete();
+        } else {
+            $product->variants()->delete();
+        }
     }
 }
