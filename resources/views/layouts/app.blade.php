@@ -49,6 +49,12 @@
             color: var(--primary-green);
         }
 
+        /* Logo treatment to hide solid white background on green headers */
+        .logo-transparent {
+            mix-blend-mode: multiply;
+            display: block;
+        }
+
         /* Hero */
         .hero {
             background: linear-gradient(135deg, var(--primary-green), var(--light-green));
@@ -138,7 +144,7 @@
     <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
         <div class="container">
             <a class="navbar-brand" href="{{ route('home') }}">
-                <img src="{{ asset('images/HiTechEcoPack.png') }}" alt="EcoPackHub Logo" style="height: 38px; width: auto;">
+                <img src="{{ asset('images/HiTechEcoPack.png') }}" alt="EcoPackHub Logo" class="logo-transparent" style="height: 46px; width: auto;">
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>

@@ -156,6 +156,10 @@
             align-items: center;
             justify-content: center;
         }
+        .logo-transparent {
+            mix-blend-mode: multiply;
+            display: block;
+        }
         .alert-custom {
             border-radius: 12px;
             border: none;
@@ -180,7 +184,7 @@
     <nav class="sidebar">
         <div class="brand">
             <a href="{{ route('admin.dashboard') }}">
-                <img src="{{ asset('images/HiTechEcoPack.png') }}" alt="EcoPackHub Logo" style="height: 34px; width: auto;">
+                <img src="{{ asset('images/HiTechEcoPack.png') }}" alt="EcoPackHub Logo" class="logo-transparent" style="height: 42px; width: auto;">
             </a>
         </div>
         <div class="nav flex-column">
