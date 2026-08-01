@@ -65,13 +65,6 @@
 
                 <hr class="my-4">
 
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <h5 class="mb-1 fw-bold" style="color: var(--primary-green);">Assigned Product Variants</h5>
-                        <p class="text-muted small mb-0">Tick each variant supplied by this vendor and set quantity, variant option, and vendor price per variant.</p>
-                    </div>
-                </div>
-
                 @php
                     $assignedProducts = $vendor->products->keyBy('id');
                     $assignedVariantMap = collect();
@@ -82,86 +75,95 @@
                             }
                         }
                     }
+
+                    $assignedVariantIds = $assignedVariantMap->keys()->map(fn ($id) => (int) $id)->values();
+                    $oldVariantRows = old('variants', []);
+
+                    $allVariantsById = $products
+                        ->flatMap(fn ($product) => $product->variants)
+                        ->keyBy('id');
+
+                    $preloadedProductIds = collect(array_keys($oldVariantRows))
+                        ->map(fn ($variantId) => (int) $variantId)
+                        ->map(fn ($variantId) => optional($allVariantsById->get($variantId))->product_id)
+                        ->filter()
+                        ->map(fn ($productId) => (int) $productId)
+                        ->unique()
+                        ->values();
                 @endphp
 
-                <div class="table-responsive mb-4">
-                    <table class="table table-hover align-middle">
-                        <thead>
-                            <tr>
-                                <th style="width: 90px;">Use</th>
-                                <th>Product</th>
-                                <th style="width: 140px;">Variant Size</th>
-                                <th>Current Vendors</th>
-                                <th style="width: 160px;">Quantity</th>
-                                <th style="width: 180px;">Variant Option</th>
-                                <th style="width: 180px;">Vendor Price (RM)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($products as $product)
-                                @php
-                                    $variantCount = $product->variants->count();
-                                    $productHasSelection = $product->variants->contains(function ($variant) {
-                                        return old('variants.' . $variant->id . '.selected');
-                                    });
-                                @endphp
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="mb-1 fw-bold" style="color: var(--primary-green);">Assigned Product Variants</h5>
+                        <p class="text-muted small mb-0">This section shows what this vendor already supplies.</p>
+                    </div>
+                    <button type="button" class="btn btn-outline-success" id="addProductToggleBtn">
+                        <i class="fas fa-plus me-2"></i>Add Product
+                    </button>
+                </div>
 
-                                @if($variantCount === 0)
-                                    <tr>
-                                        <td></td>
-                                        <td>
-                                            <strong>{{ $product->name }}</strong><br>
-                                            <small class="text-muted">{{ $product->code }}</small>
-                                        </td>
-                                        <td colspan="5">
-                                            <span class="text-muted small">No variants found for this product.</span>
-                                        </td>
-                                    </tr>
-                                @else
-                                    @foreach($product->variants as $variantIndex => $variant)
+                @if($assignedVariantMap->isEmpty())
+                    <div class="alert alert-light border mb-4">
+                        <i class="fas fa-info-circle me-2 text-muted"></i>
+                        <span class="text-muted">No variants assigned yet. Click <strong>Add Product</strong> to add variants for this vendor.</span>
+                    </div>
+                @else
+                    <div class="table-responsive mb-4">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th style="width: 90px;">Use</th>
+                                    <th>Product</th>
+                                    <th style="width: 140px;">Variant Size</th>
+                                    <th style="width: 160px;">Quantity</th>
+                                    <th style="width: 180px;">Variant Option</th>
+                                    <th style="width: 180px;">Vendor Price (RM)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($products as $product)
+                                    @php
+                                        $assignedVariantsForProduct = $product->variants
+                                            ->filter(fn ($variant) => $assignedVariantIds->contains((int) $variant->id))
+                                            ->values();
+                                    @endphp
+
+                                    @if($assignedVariantsForProduct->isEmpty())
+                                        @continue
+                                    @endif
+
+                                    @foreach($assignedVariantsForProduct as $variantIndex => $variant)
                                         @php
                                             $variantAssignment = $assignedVariantMap->get($variant->id);
                                             $fallbackProductAssignment = $assignedProducts->get($product->id)?->pivot;
-                                            $isChecked = old('variants.' . $variant->id . '.selected', (bool) $variantAssignment);
+
+                                            $oldRow = $oldVariantRows[$variant->id] ?? [];
+                                            $isChecked = filter_var($oldRow['selected'] ?? true, FILTER_VALIDATE_BOOLEAN);
                                             $quantityValue = old('variants.' . $variant->id . '.quantity', $variantAssignment->vendor_quantity ?? $fallbackProductAssignment->quantity ?? '');
                                             $priceValue = old('variants.' . $variant->id . '.price', $variantAssignment->vendor_price ?? $fallbackProductAssignment->price ?? '');
                                             $optionValue = old('variants.' . $variant->id . '.packing_quantity_option_id', $variantAssignment->packing_quantity_option_id ?? $fallbackProductAssignment->packing_quantity_option_id ?? '');
                                         @endphp
-                                        <tr>
+
+                                        <tr class="variant-row" data-variant-id="{{ $variant->id }}">
                                             <td>
-                                                <input type="checkbox" name="variants[{{ $variant->id }}][selected]" value="1" class="form-check-input variant-select" data-product-id="{{ $product->id }}" data-variant-id="{{ $variant->id }}" {{ $isChecked ? 'checked' : '' }}>
+                                                <input type="checkbox" name="variants[{{ $variant->id }}][selected]" value="1" class="form-check-input variant-select" data-variant-id="{{ $variant->id }}" {{ $isChecked ? 'checked' : '' }}>
                                             </td>
 
                                             @if($variantIndex === 0)
-                                                <td rowspan="{{ $variantCount }}" class="align-top">
+                                                <td rowspan="{{ $assignedVariantsForProduct->count() }}" class="align-top">
                                                     <strong>{{ $product->name }}</strong><br>
                                                     <small class="text-muted">{{ $product->code }}</small>
-                                                    <div class="form-check mt-2">
-                                                        <input type="checkbox" class="form-check-input product-select" data-product-id="{{ $product->id }}" id="product-select-{{ $product->id }}" {{ $productHasSelection ? 'checked' : '' }}>
-                                                        <label class="form-check-label small" for="product-select-{{ $product->id }}">Supply this product</label>
-                                                    </div>
                                                 </td>
                                             @endif
 
                                             <td>
                                                 <span class="badge bg-light text-dark border">{{ $variant->size ?: 'Default' }}</span>
                                             </td>
-
-                                            @if($variantIndex === 0)
-                                                <td rowspan="{{ $variantCount }}" class="align-top">
-                                                    @forelse($product->vendors as $assignedVendor)
-                                                        <span class="badge bg-secondary me-1 mb-1">{{ $assignedVendor->name }}</span>
-                                                    @empty
-                                                        <span class="text-muted small">Not assigned yet</span>
-                                                    @endforelse
-                                                </td>
-                                            @endif
-
                                             <td>
-                                                <input type="number" step="1" min="0" name="variants[{{ $variant->id }}][quantity]" class="form-control form-control-sm variant-quantity" data-product-id="{{ $product->id }}" data-variant-id="{{ $variant->id }}" value="{{ $quantityValue }}" placeholder="100">
+                                                <input type="number" step="1" min="0" name="variants[{{ $variant->id }}][quantity]" class="form-control form-control-sm variant-field" data-variant-id="{{ $variant->id }}" value="{{ $quantityValue }}" placeholder="100">
                                             </td>
                                             <td>
-                                                <select name="variants[{{ $variant->id }}][packing_quantity_option_id]" class="form-select form-select-sm variant-option" data-product-id="{{ $product->id }}" data-variant-id="{{ $variant->id }}">
+                                                <select name="variants[{{ $variant->id }}][packing_quantity_option_id]" class="form-select form-select-sm variant-field" data-variant-id="{{ $variant->id }}">
                                                     <option value="">Select Variant Option</option>
                                                     @foreach($packingQuantityOptions as $option)
                                                         <option value="{{ $option->id }}" {{ $optionValue == $option->id ? 'selected' : '' }}>{{ $option->name }}</option>
@@ -169,14 +171,120 @@
                                                 </select>
                                             </td>
                                             <td>
-                                                <input type="number" step="0.01" min="0" name="variants[{{ $variant->id }}][price]" class="form-control form-control-sm variant-price" data-product-id="{{ $product->id }}" data-variant-id="{{ $variant->id }}" value="{{ $priceValue }}" placeholder="0.00">
+                                                <input type="number" step="0.01" min="0" name="variants[{{ $variant->id }}][price]" class="form-control form-control-sm variant-field" data-variant-id="{{ $variant->id }}" value="{{ $priceValue }}" placeholder="0.00">
                                             </td>
                                         </tr>
                                     @endforeach
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+
+                <div id="addProductPanel" class="card border-success mb-4 d-none">
+                    <div class="card-body">
+                        <div class="row g-2 align-items-end mb-3">
+                            <div class="col-md-8">
+                                <label for="productPicker" class="form-label fw-semibold mb-1">Choose Product to Add</label>
+                                <select id="productPicker" class="form-select">
+                                    <option value="">Select a product...</option>
+                                    @foreach($products as $product)
+                                        @php
+                                            $availableVariantCount = $product->variants
+                                                ->filter(fn ($variant) => ! $assignedVariantIds->contains((int) $variant->id))
+                                                ->count();
+                                            $isPreloaded = $preloadedProductIds->contains((int) $product->id);
+                                        @endphp
+                                        @if($availableVariantCount > 0)
+                                            <option value="{{ $product->id }}" {{ $isPreloaded ? 'disabled' : '' }}>
+                                                {{ $product->name }} ({{ $product->code }})
+                                            </option>
+                                        @endif
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="button" id="addSelectedProductBtn" class="btn btn-success w-100">
+                                    <i class="fas fa-plus me-2"></i>Add Selected Product
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="productAddCardsContainer" class="d-grid gap-3">
+                            @foreach($products as $product)
+                                @php
+                                    $availableVariants = $product->variants
+                                        ->filter(fn ($variant) => ! $assignedVariantIds->contains((int) $variant->id))
+                                        ->values();
+                                    $showCardByDefault = $preloadedProductIds->contains((int) $product->id);
+                                @endphp
+
+                                @if($availableVariants->isEmpty())
+                                    @continue
                                 @endif
+
+                                <div class="card product-add-card {{ $showCardByDefault ? '' : 'd-none' }}" data-product-id="{{ $product->id }}">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>{{ $product->name }}</strong>
+                                            <small class="text-muted ms-2">{{ $product->code }}</small>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-product-btn" data-product-id="{{ $product->id }}">
+                                            <i class="fas fa-times me-1"></i>Remove
+                                        </button>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm mb-0 align-middle">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width: 90px;">Use</th>
+                                                        <th style="width: 140px;">Variant Size</th>
+                                                        <th style="width: 160px;">Quantity</th>
+                                                        <th style="width: 180px;">Variant Option</th>
+                                                        <th style="width: 180px;">Vendor Price (RM)</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach($availableVariants as $variant)
+                                                        @php
+                                                            $oldRow = $oldVariantRows[$variant->id] ?? [];
+                                                            $hasAnyOldValue = (($oldRow['quantity'] ?? '') !== '')
+                                                                || (($oldRow['packing_quantity_option_id'] ?? '') !== '')
+                                                                || (($oldRow['price'] ?? '') !== '');
+                                                            $isChecked = filter_var($oldRow['selected'] ?? false, FILTER_VALIDATE_BOOLEAN) || $hasAnyOldValue;
+                                                        @endphp
+                                                        <tr class="variant-row" data-variant-id="{{ $variant->id }}">
+                                                            <td>
+                                                                <input type="checkbox" name="variants[{{ $variant->id }}][selected]" value="1" class="form-check-input variant-select" data-variant-id="{{ $variant->id }}" {{ $isChecked ? 'checked' : '' }}>
+                                                            </td>
+                                                            <td>
+                                                                <span class="badge bg-light text-dark border">{{ $variant->size ?: 'Default' }}</span>
+                                                            </td>
+                                                            <td>
+                                                                <input type="number" step="1" min="0" name="variants[{{ $variant->id }}][quantity]" class="form-control form-control-sm variant-field" data-variant-id="{{ $variant->id }}" value="{{ old('variants.' . $variant->id . '.quantity') }}" placeholder="100">
+                                                            </td>
+                                                            <td>
+                                                                <select name="variants[{{ $variant->id }}][packing_quantity_option_id]" class="form-select form-select-sm variant-field" data-variant-id="{{ $variant->id }}">
+                                                                    <option value="">Select Variant Option</option>
+                                                                    @foreach($packingQuantityOptions as $option)
+                                                                        <option value="{{ $option->id }}" {{ old('variants.' . $variant->id . '.packing_quantity_option_id') == $option->id ? 'selected' : '' }}>{{ $option->name }}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                            </td>
+                                                            <td>
+                                                                <input type="number" step="0.01" min="0" name="variants[{{ $variant->id }}][price]" class="form-control form-control-sm variant-field" data-variant-id="{{ $variant->id }}" value="{{ old('variants.' . $variant->id . '.price') }}" placeholder="0.00">
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
                             @endforeach
-                        </tbody>
-                    </table>
+                        </div>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn" style="background-color: var(--primary-green); color: #fff;">
@@ -188,91 +296,114 @@
 </div>
 
 <script>
-    const variantCheckboxes = Array.from(document.querySelectorAll('.variant-select'));
-    const productCheckboxes = Array.from(document.querySelectorAll('.product-select'));
+    const addProductPanel = document.getElementById('addProductPanel');
+    const addProductToggleBtn = document.getElementById('addProductToggleBtn');
+    const addSelectedProductBtn = document.getElementById('addSelectedProductBtn');
+    const productPicker = document.getElementById('productPicker');
 
     const toggleVariantInputs = (variantId, enabled) => {
-        const quantityInput = document.querySelector(`.variant-quantity[data-variant-id="${variantId}"]`);
-        const optionSelect = document.querySelector(`.variant-option[data-variant-id="${variantId}"]`);
-        const priceInput = document.querySelector(`.variant-price[data-variant-id="${variantId}"]`);
-
-        if (quantityInput) quantityInput.disabled = !enabled;
-        if (optionSelect) optionSelect.disabled = !enabled;
-        if (priceInput) priceInput.disabled = !enabled;
+        document.querySelectorAll(`.variant-field[data-variant-id="${variantId}"]`).forEach((field) => {
+            field.disabled = !enabled;
+        });
     };
 
-    const updateProductState = (productId) => {
-        const productCheckbox = document.querySelector(`.product-select[data-product-id="${productId}"]`);
-        if (!productCheckbox) {
+    const bindVariantEvents = () => {
+        document.querySelectorAll('.variant-select').forEach((checkbox) => {
+            const variantId = checkbox.dataset.variantId;
+
+            checkbox.addEventListener('change', () => {
+                toggleVariantInputs(variantId, checkbox.checked);
+            });
+
+            toggleVariantInputs(variantId, checkbox.checked);
+        });
+
+        document.querySelectorAll('.variant-field').forEach((input) => {
+            input.addEventListener('input', () => {
+                const variantId = input.dataset.variantId;
+                const checkbox = document.querySelector(`.variant-select[data-variant-id="${variantId}"]`);
+                if (!checkbox) {
+                    return;
+                }
+
+                if (!checkbox.checked && input.value !== '') {
+                    checkbox.checked = true;
+                    toggleVariantInputs(variantId, true);
+                }
+            });
+        });
+    };
+
+    const setProductCardState = (card, visible) => {
+        if (visible) {
+            card.classList.remove('d-none');
+            card.querySelectorAll('.variant-select').forEach((checkbox) => {
+                toggleVariantInputs(checkbox.dataset.variantId, checkbox.checked);
+            });
+        } else {
+            card.classList.add('d-none');
+            card.querySelectorAll('.variant-select').forEach((checkbox) => {
+                checkbox.checked = false;
+            });
+            card.querySelectorAll('.variant-field').forEach((field) => {
+                field.value = '';
+                field.disabled = true;
+            });
+        }
+    };
+
+    addProductToggleBtn?.addEventListener('click', () => {
+        addProductPanel?.classList.toggle('d-none');
+    });
+
+    addSelectedProductBtn?.addEventListener('click', () => {
+        const productId = productPicker?.value;
+        if (!productId) {
             return;
         }
 
-        const scopedVariants = variantCheckboxes.filter((cb) => cb.dataset.productId === String(productId));
-        const checkedCount = scopedVariants.filter((cb) => cb.checked).length;
+        const card = document.querySelector(`.product-add-card[data-product-id="${productId}"]`);
+        if (!card) {
+            return;
+        }
 
-        productCheckbox.checked = checkedCount > 0;
-        productCheckbox.indeterminate = checkedCount > 0 && checkedCount < scopedVariants.length;
-    };
+        setProductCardState(card, true);
 
-    productCheckboxes.forEach((productCheckbox) => {
-        productCheckbox.addEventListener('change', () => {
-            const productId = productCheckbox.dataset.productId;
-            const scopedVariants = variantCheckboxes.filter((cb) => cb.dataset.productId === String(productId));
+        const option = productPicker.querySelector(`option[value="${productId}"]`);
+        if (option) {
+            option.disabled = true;
+        }
 
-            scopedVariants.forEach((variantCheckbox) => {
-                variantCheckbox.checked = productCheckbox.checked;
-                toggleVariantInputs(variantCheckbox.dataset.variantId, productCheckbox.checked);
-            });
-
-            productCheckbox.indeterminate = false;
-        });
+        productPicker.value = '';
+        addProductPanel.classList.remove('d-none');
     });
 
-    variantCheckboxes.forEach((checkbox) => {
-        const variantId = checkbox.dataset.variantId;
-        const productId = checkbox.dataset.productId;
-
-        checkbox.addEventListener('change', () => {
-            toggleVariantInputs(variantId, checkbox.checked);
-            updateProductState(productId);
-        });
-
-        toggleVariantInputs(variantId, checkbox.checked);
-    });
-
-    document.querySelectorAll('.variant-quantity, .variant-option, .variant-price').forEach((input) => {
-        const variantId = input.dataset.variantId;
-        const productId = input.dataset.productId;
-
-        input.addEventListener('input', () => {
-            const checkbox = document.querySelector(`.variant-select[data-variant-id="${variantId}"]`);
-            if (!checkbox) {
+    document.querySelectorAll('.remove-product-btn').forEach((button) => {
+        button.addEventListener('click', () => {
+            const productId = button.dataset.productId;
+            const card = document.querySelector(`.product-add-card[data-product-id="${productId}"]`);
+            if (!card) {
                 return;
             }
 
-            if (!checkbox.checked && input.value !== '') {
-                checkbox.checked = true;
-                toggleVariantInputs(variantId, true);
-                updateProductState(productId);
-            }
-        });
+            setProductCardState(card, false);
 
-        input.addEventListener('change', () => {
-            const checkbox = document.querySelector(`.variant-select[data-variant-id="${variantId}"]`);
-            if (!checkbox) {
-                return;
-            }
-
-            if (!checkbox.checked && input.value !== '') {
-                checkbox.checked = true;
-                toggleVariantInputs(variantId, true);
-                updateProductState(productId);
+            const option = productPicker?.querySelector(`option[value="${productId}"]`);
+            if (option) {
+                option.disabled = false;
             }
         });
     });
 
-    productCheckboxes.forEach((productCheckbox) => {
-        updateProductState(productCheckbox.dataset.productId);
+    document.querySelectorAll('.product-add-card').forEach((card) => {
+        const isVisible = !card.classList.contains('d-none');
+        setProductCardState(card, isVisible);
     });
+
+    if (Array.from(document.querySelectorAll('.product-add-card')).some((card) => !card.classList.contains('d-none'))) {
+        addProductPanel?.classList.remove('d-none');
+    }
+
+    bindVariantEvents();
 </script>
 @endsection
