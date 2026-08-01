@@ -86,12 +86,7 @@
 
                     <p class="text-muted">{{ $product->description }}</p>
 
-                    <div id="product-script-data"
-                        data-images='@json($productImages)'
-                        data-has-discount="{{ $product->has_active_discount ? 1 : 0 }}"
-                        data-discount-price="{{ $product->discount_price !== null ? (float) $product->discount_price : '' }}"
-                        data-discount-percentage="{{ $product->discount_percentage !== null ? (float) $product->discount_percentage : '' }}">
-                    </div>
+                    <div id="product-script-data" data-images='@json($productImages)'></div>
 
                     <!-- Price Range -->
                     <div class="mb-3">
@@ -138,6 +133,8 @@
                                     @endphp
                                     <option value="{{ $variant->id }}" 
                                             data-price="{{ $variant->price }}"
+                                            data-discounted-price="{{ $variant->discounted_price }}"
+                                            data-has-discount="{{ $variant->has_active_discount ? 1 : 0 }}"
                                             data-stock="{{ $variant->stock }}"
                                             data-packing="{{ $vendorQuantity }}"
                                             data-packing-option="{{ $vendorOption }}"
@@ -225,7 +222,7 @@
                             <tbody>
                                 @foreach($product->variants as $variant)
                                     @php
-                                        $discountedPrice = $product->calculateDiscountedPrice($variant->price);
+                                        $discountedPrice = $variant->discounted_price;
                                         $vendorAssignment = $resolveVendorAssignment($variant);
                                         $vendorQuantity = $variant->vendor_quantity ?? $vendorAssignment?->pivot?->quantity;
                                         if ($vendorQuantity === null && preg_match('/\d+/', (string) $variant->packing_quantity, $qtyMatch)) {
@@ -241,7 +238,7 @@
                                         <td>{{ $vendorQuantity }} {{ $vendorOption ? '(' . $vendorOption . ')' : '' }}</td>
                                         <td style="color: var(--primary-green); font-weight: bold;">
                                             RM {{ number_format($discountedPrice, 2) }}
-                                            @if($product->has_active_discount)
+                                            @if($variant->has_active_discount)
                                                 <br><small style="text-decoration: line-through; color: #999;">RM {{ number_format($variant->price, 2) }}</small>
                                             @endif
                                         </td>
@@ -352,24 +349,13 @@
         const selectedOption = this.options[this.selectedIndex];
         if (this.value) {
             const basePrice = parseFloat(selectedOption.dataset.price);
+            const discountedPrice = parseFloat(selectedOption.dataset.discountedPrice || selectedOption.dataset.price);
+            const hasDiscount = selectedOption.dataset.hasDiscount === '1';
             const stock = parseInt(selectedOption.dataset.stock);
             const packing = selectedOption.dataset.packing;
             const packingOption = selectedOption.dataset.packingOption;
-            
-            // Apply discount calculation
-            const hasDiscount = productScriptData?.dataset.hasDiscount === '1';
-            const discountPrice = productScriptData?.dataset.discountPrice ? parseFloat(productScriptData.dataset.discountPrice) : null;
-            const discountPercentage = productScriptData?.dataset.discountPercentage ? parseFloat(productScriptData.dataset.discountPercentage) : null;
-            
-            let finalPrice = basePrice;
-            if (hasDiscount) {
-                if (discountPrice !== null) {
-                    finalPrice = Math.min(basePrice, discountPrice);
-                } else if (discountPercentage !== null) {
-                    const percentage = Math.max(0, Math.min(100, discountPercentage));
-                    finalPrice = Math.round(basePrice * (1 - (percentage / 100)) * 100) / 100;
-                }
-            }
+
+            const finalPrice = hasDiscount ? discountedPrice : basePrice;
             
             priceDisplay.textContent = finalPrice.toFixed(2);
             packingDisplay.textContent = packing ? 'Qty: ' + packing + (packingOption ? ' (' + packingOption + ')' : '') : '';

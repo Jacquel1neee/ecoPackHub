@@ -63,28 +63,10 @@
                 <textarea id="product-description" name="description" rows="2" class="form-control">{{ old('description', $product->description) }}</textarea>
             </div>
 
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Discount Price (RM)</label>
-                    <input type="number" step="0.01" min="0" name="discount_price" class="form-control @error('discount_price') is-invalid @enderror" value="{{ old('discount_price', $product->discount_price) }}" placeholder="e.g., 12.50">
-                    @error('discount_price')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Discount Percentage (%)</label>
-                    <input type="number" step="0.01" min="0" max="100" name="discount_percentage" class="form-control @error('discount_percentage') is-invalid @enderror" value="{{ old('discount_percentage', $product->discount_percentage) }}" placeholder="e.g., 10">
-                    @error('discount_percentage')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
-                <div class="col-md-4 mb-3 d-flex align-items-end">
-                    <div class="form-check mb-2">
-                        <input type="checkbox" name="is_discount_active" value="1" class="form-check-input" id="is_discount_active" {{ old('is_discount_active', $product->is_discount_active) ? 'checked' : '' }}>
-                        <label class="form-check-label" for="is_discount_active">
-                            Activate Discount on Home Page
-                        </label>
-                    </div>
-                </div>
+            <div class="alert alert-info py-2 px-3 mb-3 small">
+                <i class="fas fa-info-circle me-1"></i>
+                Discounts are now set per variant below (each variant can have different discount settings).
             </div>
-
-            <small class="text-muted d-block mb-2">Set either discount price or discount percentage. Tick activate to apply on homepage cards.</small>
 
             <div class="mb-3 form-check">
                 <input type="checkbox" name="show_price_on_homepage" value="1" class="form-check-input" id="show_price_on_homepage" {{ old('show_price_on_homepage', $product->show_price_on_homepage ?? true) ? 'checked' : '' }}>
@@ -144,12 +126,52 @@
                     <div class="variant-item row g-3 mb-3 p-3" style="background: #f8f9fa; border-radius: 12px; border: 1px solid #e0e0e0;">
                         <input type="hidden" name="variants[{{ $index }}][id]" value="{{ $variant->id }}">
                         @php
-                            $currentVendorAssignment = $product->vendors->firstWhere('id', old('variants.'.$index.'.vendor_id', $variant->vendor_id));
+                            $selectedVendorId = old('variants.'.$index.'.vendor_id', $variant->vendor_id);
+                            if (!$selectedVendorId && $product->vendors->count() === 1) {
+                                $selectedVendorId = $product->vendors->first()->id;
+                            }
+
+                            $siblingVariantForSelectedVendor = $selectedVendorId
+                                ? $product->variants->first(function ($candidate) use ($variant, $selectedVendorId) {
+                                    return (int) $candidate->id !== (int) $variant->id
+                                        && (int) $candidate->vendor_id === (int) $selectedVendorId
+                                        && $candidate->vendor_quantity !== null;
+                                })
+                                : null;
+
+                            $currentVendorAssignment = $product->vendors->firstWhere('id', $selectedVendorId)
+                                ?: ($variant->packing_quantity_option_id
+                                    ? $product->vendors->firstWhere('pivot.packing_quantity_option_id', $variant->packing_quantity_option_id)
+                                    : null)
+                                ?: $product->vendors->first(function ($vendor) {
+                                    return $vendor->pivot && $vendor->pivot->quantity !== null;
+                                });
+
                             $currentVendorQuantity = old('variants.'.$index.'.vendor_quantity', $variant->vendor_quantity ?? $currentVendorAssignment?->pivot?->quantity ?? '');
+                            if (($currentVendorQuantity === '' || $currentVendorQuantity === null) && $siblingVariantForSelectedVendor?->vendor_quantity !== null) {
+                                $currentVendorQuantity = (int) $siblingVariantForSelectedVendor->vendor_quantity;
+                            }
+                            $currentOptionId = old('variants.'.$index.'.packing_quantity_option_id', $variant->packing_quantity_option_id ?? $currentVendorAssignment?->pivot?->packing_quantity_option_id);
+                            if ((!$currentOptionId || $currentOptionId === '') && $siblingVariantForSelectedVendor?->packing_quantity_option_id) {
+                                $currentOptionId = $siblingVariantForSelectedVendor->packing_quantity_option_id;
+                            }
+                            $matchingVendorOptionVariant = ($selectedVendorId && $currentOptionId)
+                                ? $product->variants->first(function ($candidate) use ($variant, $selectedVendorId, $currentOptionId) {
+                                    return (int) $candidate->id !== (int) $variant->id
+                                        && (int) $candidate->vendor_id === (int) $selectedVendorId
+                                        && (int) $candidate->packing_quantity_option_id === (int) $currentOptionId
+                                        && $candidate->vendor_quantity !== null;
+                                })
+                                : null;
+                            if (($currentVendorQuantity === '' || $currentVendorQuantity === null) && $matchingVendorOptionVariant?->vendor_quantity !== null) {
+                                $currentVendorQuantity = (int) $matchingVendorOptionVariant->vendor_quantity;
+                            }
                             if ($currentVendorQuantity === '' && preg_match('/\d+/', (string) $variant->packing_quantity, $qtyMatch)) {
                                 $currentVendorQuantity = (int) $qtyMatch[0];
                             }
-                            $currentOptionId = old('variants.'.$index.'.packing_quantity_option_id', $variant->packing_quantity_option_id ?? $currentVendorAssignment?->pivot?->packing_quantity_option_id);
+                            if ($currentVendorQuantity === '' || $currentVendorQuantity === null) {
+                                $currentVendorQuantity = (int) ($variant->stock ?? 0);
+                            }
                             $currentOptionName = $currentOptionId ? ($packingQuantityOptions->firstWhere('id', $currentOptionId)?->name ?? '') : '';
                             $currentQuantifierDisplay = trim(
                                 ($currentVendorQuantity !== '' ? (string) ((int) $currentVendorQuantity) : '')
@@ -183,18 +205,51 @@
                                     <option value="">Select Vendor</option>
                                     @foreach($product->vendors as $vendor)
                                         @php
+                                            $variantAssignmentForVendor = $product->variants->first(function ($candidate) use ($variant, $vendor) {
+                                                return (int) $candidate->id !== (int) $variant->id
+                                                    && (int) $candidate->vendor_id === (int) $vendor->id
+                                                    && (
+                                                        $candidate->vendor_quantity !== null
+                                                        || $candidate->packing_quantity_option_id !== null
+                                                        || $candidate->vendor_price !== null
+                                                    );
+                                            });
+                                            $isSelectedVendor = (int) $vendor->id === (int) $selectedVendorId;
                                             $vendorPrice = (int) $vendor->id === (int) $variant->vendor_id
                                                 ? ($variant->vendor_price ?? ($vendor->pivot->price ?? ''))
-                                                : ($vendor->pivot->price ?? '');
+                                                : ($variantAssignmentForVendor?->vendor_price ?? ($vendor->pivot->price ?? ''));
                                             $vendorQuantity = (int) $vendor->id === (int) $variant->vendor_id
                                                 ? ($variant->vendor_quantity ?? ($vendor->pivot->quantity ?? ''))
-                                                : ($vendor->pivot->quantity ?? '');
+                                                : ($variantAssignmentForVendor?->vendor_quantity ?? ($vendor->pivot->quantity ?? ''));
+                                            if (($vendorQuantity === '' || $vendorQuantity === null) && $isSelectedVendor && $currentVendorQuantity !== '') {
+                                                $vendorQuantity = $currentVendorQuantity;
+                                            }
+                                            if ($vendorQuantity === '' && (int) $vendor->id === (int) $variant->vendor_id && preg_match('/\d+/', (string) $variant->packing_quantity, $qtyMatch)) {
+                                                $vendorQuantity = (int) $qtyMatch[0];
+                                            }
                                             $vendorOptionId = (int) $vendor->id === (int) $variant->vendor_id
                                                 ? ($variant->packing_quantity_option_id ?? ($vendor->pivot->packing_quantity_option_id ?? ''))
-                                                : ($vendor->pivot->packing_quantity_option_id ?? '');
+                                                : ($variantAssignmentForVendor?->packing_quantity_option_id ?? ($vendor->pivot->packing_quantity_option_id ?? ''));
+                                            if (($vendorOptionId === '' || $vendorOptionId === null) && $isSelectedVendor && $currentOptionId) {
+                                                $vendorOptionId = $currentOptionId;
+                                            }
+                                            $vendorVariantForOption = $vendorOptionId
+                                                ? $product->variants->first(function ($candidate) use ($variant, $vendor, $vendorOptionId) {
+                                                    return (int) $candidate->id !== (int) $variant->id
+                                                        && (int) $candidate->vendor_id === (int) $vendor->id
+                                                        && (int) $candidate->packing_quantity_option_id === (int) $vendorOptionId
+                                                        && $candidate->vendor_quantity !== null;
+                                                })
+                                                : null;
+                                            if (($vendorQuantity === '' || $vendorQuantity === null) && $vendorVariantForOption?->vendor_quantity !== null) {
+                                                $vendorQuantity = (int) $vendorVariantForOption->vendor_quantity;
+                                            }
+                                            if (($vendorQuantity === '' || $vendorQuantity === null) && $isSelectedVendor) {
+                                                $vendorQuantity = (int) ($variant->stock ?? 0);
+                                            }
                                             $vendorOptionName = $vendorOptionId ? ($packingQuantityOptions->firstWhere('id', $vendorOptionId)?->name ?? '') : '';
                                         @endphp
-                                        <option value="{{ $vendor->id }}" data-price="{{ $vendorPrice }}" data-quantity="{{ $vendorQuantity }}" data-option-id="{{ $vendorOptionId }}" data-option-name="{{ $vendorOptionName }}" {{ old('variants.'.$index.'.vendor_id', $variant->vendor_id) == $vendor->id ? 'selected' : '' }}>
+                                        <option value="{{ $vendor->id }}" data-price="{{ $vendorPrice }}" data-quantity="{{ $vendorQuantity }}" data-option-id="{{ $vendorOptionId }}" data-option-name="{{ $vendorOptionName }}" {{ $selectedVendorId == $vendor->id ? 'selected' : '' }}>
                                             {{ $vendor->name }}
                                         </option>
                                     @endforeach
@@ -216,6 +271,24 @@
                                     {{ $loop->count <= 1 ? 'style="display:none;"' : '' }}>
                                 <i class="fas fa-trash"></i> Remove
                             </button>
+                        </div>
+                        <div class="col-12">
+                            <div class="row g-2 mt-1">
+                                <div class="col-md-3">
+                                    <label class="form-label small">Variant Discount Price (RM)</label>
+                                    <input type="number" step="0.01" min="0" name="variants[{{ $index }}][discount_price]" class="form-control" value="{{ old('variants.'.$index.'.discount_price', $variant->discount_price) }}" placeholder="e.g., 12.50">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small">Variant Discount Percentage (%)</label>
+                                    <input type="number" step="0.01" min="0" max="100" name="variants[{{ $index }}][discount_percentage]" class="form-control" value="{{ old('variants.'.$index.'.discount_percentage', $variant->discount_percentage) }}" placeholder="e.g., 10">
+                                </div>
+                                <div class="col-md-4 d-flex align-items-end">
+                                    <div class="form-check mb-2">
+                                        <input type="checkbox" name="variants[{{ $index }}][is_discount_active]" value="1" class="form-check-input" id="variant_discount_active_{{ $index }}" {{ old('variants.'.$index.'.is_discount_active', $variant->is_discount_active) ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="variant_discount_active_{{ $index }}">Activate Variant Discount</label>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 @endforeach
@@ -251,7 +324,7 @@
             }
 
             const option = vendorSelect.options[vendorSelect.selectedIndex];
-            const vendorPrice = option?.dataset.price || priceInput.value || '';
+            const vendorPrice = option?.dataset.price || '';
 
             if (!vendorSelect.value) {
                 return;
@@ -273,7 +346,7 @@
             }
 
             const option = vendorSelect.options[vendorSelect.selectedIndex];
-            const vendorQuantity = option?.dataset.quantity || '';
+            const vendorQuantity = option?.dataset.quantity || vendorQuantityInput?.value || '';
             const optionId = option?.dataset.optionId || '';
             const optionName = option?.dataset.optionName || '';
                 const qtyPrefix = vendorQuantity !== '' ? String(parseInt(vendorQuantity, 10)) : '';
@@ -363,6 +436,24 @@
                 <button type="button" class="btn btn-danger btn-sm w-100 remove-variant">
                     <i class="fas fa-trash"></i> Remove
                 </button>
+            </div>
+            <div class="col-12">
+                <div class="row g-2 mt-1">
+                    <div class="col-md-3">
+                        <label class="form-label small">Variant Discount Price (RM)</label>
+                        <input type="number" step="0.01" min="0" name="variants[${variantIndex}][discount_price]" class="form-control" placeholder="e.g., 12.50">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Variant Discount Percentage (%)</label>
+                        <input type="number" step="0.01" min="0" max="100" name="variants[${variantIndex}][discount_percentage]" class="form-control" placeholder="e.g., 10">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <div class="form-check mb-2">
+                            <input type="checkbox" name="variants[${variantIndex}][is_discount_active]" value="1" class="form-check-input" id="variant_discount_active_${variantIndex}">
+                            <label class="form-check-label" for="variant_discount_active_${variantIndex}">Activate Variant Discount</label>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
         container.appendChild(newVariant);

@@ -39,9 +39,6 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'material' => 'nullable|string',
-            'discount_price' => 'nullable|numeric|min:0',
-            'discount_percentage' => 'nullable|numeric|min:0|max:100',
-            'is_discount_active' => 'nullable|boolean',
             'show_price_on_homepage' => 'nullable|boolean',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             // Variants validation
@@ -51,17 +48,19 @@ class ProductController extends Controller
             'variants.*.packing_quantity' => 'required|string',
             'variants.*.packing_quantity_option_id' => 'nullable|exists:packing_quantity_options,id',
             'variants.*.price' => 'required|numeric|min:0',
+            'variants.*.discount_price' => 'nullable|numeric|min:0',
+            'variants.*.discount_percentage' => 'nullable|numeric|min:0|max:100',
+            'variants.*.is_discount_active' => 'nullable|boolean',
             'variants.*.stock' => 'required|integer|min:0',
             'variants.*.vendor_id' => 'required|exists:vendors,id',
             'variants.*.vendor_quantity' => 'nullable|integer|min:0',
         ]);
 
-        $productData = $request->except('image', 'variants', 'vendors');
-        $productData['discount_price'] = $request->filled('discount_price') ? $request->discount_price : null;
-        $productData['discount_percentage'] = $request->filled('discount_percentage') ? $request->discount_percentage : null;
-        $productData['is_discount_active'] = $request->boolean('is_discount_active')
-            && ($productData['discount_price'] !== null || $productData['discount_percentage'] !== null);
-        $productData['show_price_on_homepage'] = $request->boolean('show_price_on_homepage', true);
+        $productData = $request->except('image', 'variants', 'vendors', 'discount_price', 'discount_percentage', 'is_discount_active');
+        $productData['discount_price'] = null;
+        $productData['discount_percentage'] = null;
+        $productData['is_discount_active'] = false;
+        $productData['show_price_on_homepage'] = $request->boolean('show_price_on_homepage', false);
 
         $product = new Product($productData);
 
@@ -133,9 +132,6 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'material' => 'nullable|string',
-            'discount_price' => 'nullable|numeric|min:0',
-            'discount_percentage' => 'nullable|numeric|min:0|max:100',
-            'is_discount_active' => 'nullable|boolean',
             'show_price_on_homepage' => 'nullable|boolean',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             // Variants validation
@@ -145,17 +141,19 @@ class ProductController extends Controller
             'variants.*.packing_quantity' => 'required|string',
             'variants.*.packing_quantity_option_id' => 'nullable|exists:packing_quantity_options,id',
             'variants.*.price' => 'required|numeric|min:0',
+            'variants.*.discount_price' => 'nullable|numeric|min:0',
+            'variants.*.discount_percentage' => 'nullable|numeric|min:0|max:100',
+            'variants.*.is_discount_active' => 'nullable|boolean',
             'variants.*.stock' => 'required|integer|min:0',
             'variants.*.vendor_id' => 'required|exists:vendors,id',
             'variants.*.vendor_quantity' => 'nullable|integer|min:0',
         ]);
 
-        $productData = $request->except('image', 'variants', 'vendors');
-        $productData['discount_price'] = $request->filled('discount_price') ? $request->discount_price : null;
-        $productData['discount_percentage'] = $request->filled('discount_percentage') ? $request->discount_percentage : null;
-        $productData['is_discount_active'] = $request->boolean('is_discount_active')
-            && ($productData['discount_price'] !== null || $productData['discount_percentage'] !== null);
-        $productData['show_price_on_homepage'] = $request->boolean('show_price_on_homepage', true);
+        $productData = $request->except('image', 'variants', 'vendors', 'discount_price', 'discount_percentage', 'is_discount_active');
+        $productData['discount_price'] = null;
+        $productData['discount_percentage'] = null;
+        $productData['is_discount_active'] = false;
+        $productData['show_price_on_homepage'] = $request->boolean('show_price_on_homepage', false);
 
         $product->fill($productData);
 
@@ -556,6 +554,13 @@ class ProductController extends Controller
                 'packing_quantity' => $packingQuantityOption->name,
                 'packing_quantity_option_id' => $packingQuantityOption->id,
                 'price' => $variantData['price'],
+                'discount_price' => isset($variantData['discount_price']) && $variantData['discount_price'] !== '' ? $variantData['discount_price'] : null,
+                'discount_percentage' => isset($variantData['discount_percentage']) && $variantData['discount_percentage'] !== '' ? $variantData['discount_percentage'] : null,
+                'is_discount_active' => ! empty($variantData['is_discount_active'])
+                    && (
+                        (isset($variantData['discount_price']) && $variantData['discount_price'] !== '')
+                        || (isset($variantData['discount_percentage']) && $variantData['discount_percentage'] !== '')
+                    ),
                 'stock' => $variantData['stock'] ?? 0,
                 'vendor_id' => $variantData['vendor_id'],
                 'vendor_price' => $vendorPrice,

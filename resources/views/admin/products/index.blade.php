@@ -59,17 +59,10 @@
                             <td>
                                 @if($product->has_active_discount)
                                     <span class="badge bg-success mb-1">Active</span><br>
-                                    @if($product->discount_price !== null)
-                                        <small>RM {{ number_format((float) $product->discount_price, 2) }}</small>
-                                    @elseif($product->discount_percentage !== null)
-                                        <small>{{ number_format((float) $product->discount_percentage, 2) }}%</small>
-                                    @endif
-                                @elseif($product->discount_price !== null || $product->discount_percentage !== null)
-                                    <span class="badge bg-warning text-dark mb-1">Configured</span><br>
-                                    @if($product->discount_price !== null)
-                                        <small>RM {{ number_format((float) $product->discount_price, 2) }}</small>
-                                    @elseif($product->discount_percentage !== null)
-                                        <small>{{ number_format((float) $product->discount_percentage, 2) }}%</small>
+                                    @if($product->max_discount_percentage !== null)
+                                        <small>Up to {{ number_format((float) $product->max_discount_percentage, 2) }}%</small>
+                                    @else
+                                        <small>Variant-level promo</small>
                                     @endif
                                 @else
                                     <span class="badge bg-secondary">No Discount</span>

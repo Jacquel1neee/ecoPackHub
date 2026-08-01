@@ -192,24 +192,32 @@ class Product extends Model
 
     public function getHasActiveDiscountAttribute(): bool
     {
-        return (bool) $this->is_discount_active
-            && ($this->discount_price !== null || $this->discount_percentage !== null);
+        if ($this->relationLoaded('variants')) {
+            return $this->variants->contains(fn (ProductVariant $variant) => $variant->has_active_discount);
+        }
+
+        return $this->variants()
+            ->where('is_discount_active', true)
+            ->where(function ($query) {
+                $query->whereNotNull('discount_price')
+                    ->orWhereNotNull('discount_percentage');
+            })
+            ->exists();
     }
 
     public function calculateDiscountedPrice(float $basePrice): float
     {
-        if (! $this->has_active_discount) {
-            return $basePrice;
-        }
+        // Legacy fallback for any older code path that still uses product-level discount values.
+        if ((bool) $this->is_discount_active) {
+            if ($this->discount_price !== null) {
+                $discounted = (float) $this->discount_price;
+                return max(0, min($basePrice, $discounted));
+            }
 
-        if ($this->discount_price !== null) {
-            $discounted = (float) $this->discount_price;
-            return max(0, min($basePrice, $discounted));
-        }
-
-        if ($this->discount_percentage !== null) {
-            $percentage = max(0, min(100, (float) $this->discount_percentage));
-            return round($basePrice * (1 - ($percentage / 100)), 2);
+            if ($this->discount_percentage !== null) {
+                $percentage = max(0, min(100, (float) $this->discount_percentage));
+                return round($basePrice * (1 - ($percentage / 100)), 2);
+            }
         }
 
         return $basePrice;
@@ -217,12 +225,45 @@ class Product extends Model
 
     public function getDiscountedMinPriceAttribute(): float
     {
-        return $this->calculateDiscountedPrice((float) $this->min_price);
+        $variants = $this->relationLoaded('variants')
+            ? $this->variants
+            : $this->variants()->get();
+
+        if ($variants->isEmpty()) {
+            return 0.0;
+        }
+
+        return (float) $variants
+            ->map(fn (ProductVariant $variant) => $variant->discounted_price)
+            ->min();
     }
 
     public function getDiscountedMaxPriceAttribute(): float
     {
-        return $this->calculateDiscountedPrice((float) $this->max_price);
+        $variants = $this->relationLoaded('variants')
+            ? $this->variants
+            : $this->variants()->get();
+
+        if ($variants->isEmpty()) {
+            return 0.0;
+        }
+
+        return (float) $variants
+            ->map(fn (ProductVariant $variant) => $variant->discounted_price)
+            ->max();
+    }
+
+    public function getMaxDiscountPercentageAttribute(): ?float
+    {
+        $variants = $this->relationLoaded('variants')
+            ? $this->variants
+            : $this->variants()->get();
+
+        $max = $variants
+            ->filter(fn (ProductVariant $variant) => $variant->has_active_discount && $variant->discount_percentage !== null)
+            ->max('discount_percentage');
+
+        return $max !== null ? (float) $max : null;
     }
 
     public function getTotalStockAttribute()

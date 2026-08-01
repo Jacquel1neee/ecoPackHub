@@ -129,9 +129,7 @@
                     <!-- Loop through cart items -->
                     @foreach($items as $item)
                         @php
-                            $basePrice = $item->variant->price ?? 0;
-                            $product = $item->variant->product;
-                            $finalPrice = $product->calculateDiscountedPrice($basePrice);
+                            $finalPrice = $item->variant->discounted_price ?? ($item->variant->price ?? 0);
                         @endphp
                         <div class="d-flex justify-content-between mb-2">
                             <span>

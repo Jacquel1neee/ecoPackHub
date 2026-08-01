@@ -60,28 +60,10 @@
                 <textarea id="product-description" name="description" rows="2" class="form-control">{{ old('description') }}</textarea>
             </div>
 
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Discount Price (RM)</label>
-                    <input type="number" step="0.01" min="0" name="discount_price" class="form-control @error('discount_price') is-invalid @enderror" value="{{ old('discount_price') }}" placeholder="e.g., 12.50">
-                    @error('discount_price')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Discount Percentage (%)</label>
-                    <input type="number" step="0.01" min="0" max="100" name="discount_percentage" class="form-control @error('discount_percentage') is-invalid @enderror" value="{{ old('discount_percentage') }}" placeholder="e.g., 10">
-                    @error('discount_percentage')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
-                <div class="col-md-4 mb-3 d-flex align-items-end">
-                    <div class="form-check mb-2">
-                        <input type="checkbox" name="is_discount_active" value="1" class="form-check-input" id="is_discount_active" {{ old('is_discount_active') ? 'checked' : '' }}>
-                        <label class="form-check-label" for="is_discount_active">
-                            Activate Discount on Home Page
-                        </label>
-                    </div>
-                </div>
+            <div class="alert alert-info py-2 px-3 mb-3 small">
+                <i class="fas fa-info-circle me-1"></i>
+                Discounts are now set per variant below (each variant can have different discount settings).
             </div>
-
-            <small class="text-muted d-block mb-2">Set either discount price or discount percentage. Tick activate to apply on homepage cards.</small>
 
             <div class="mb-3 form-check">
                 <input type="checkbox" name="show_price_on_homepage" value="1" class="form-check-input" id="show_price_on_homepage" {{ old('show_price_on_homepage', true) ? 'checked' : '' }}>
@@ -145,6 +127,24 @@
                             <i class="fas fa-trash"></i> Remove
                         </button>
                     </div>
+                    <div class="col-12">
+                        <div class="row g-2 mt-1">
+                            <div class="col-md-3">
+                                <label class="form-label small">Variant Discount Price (RM)</label>
+                                <input type="number" step="0.01" min="0" name="variants[0][discount_price]" class="form-control" value="{{ old('variants.0.discount_price') }}" placeholder="e.g., 12.50">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Variant Discount Percentage (%)</label>
+                                <input type="number" step="0.01" min="0" max="100" name="variants[0][discount_percentage]" class="form-control" value="{{ old('variants.0.discount_percentage') }}" placeholder="e.g., 10">
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <div class="form-check mb-2">
+                                    <input type="checkbox" name="variants[0][is_discount_active]" value="1" class="form-check-input" id="variant_discount_active_0" {{ old('variants.0.is_discount_active') ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="variant_discount_active_0">Activate Variant Discount</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -178,7 +178,7 @@
             }
 
             const option = vendorSelect.options[vendorSelect.selectedIndex];
-            const vendorPrice = option?.dataset.price || priceInput.value || '';
+            const vendorPrice = option?.dataset.price || '';
 
             if (!vendorSelect.value) {
                 return;
@@ -320,6 +320,24 @@
                 <button type="button" class="btn btn-danger btn-sm w-100 remove-variant">
                     <i class="fas fa-trash"></i> Remove
                 </button>
+            </div>
+            <div class="col-12">
+                <div class="row g-2 mt-1">
+                    <div class="col-md-3">
+                        <label class="form-label small">Variant Discount Price (RM)</label>
+                        <input type="number" step="0.01" min="0" name="variants[${variantIndex}][discount_price]" class="form-control" placeholder="e.g., 12.50">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Variant Discount Percentage (%)</label>
+                        <input type="number" step="0.01" min="0" max="100" name="variants[${variantIndex}][discount_percentage]" class="form-control" placeholder="e.g., 10">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <div class="form-check mb-2">
+                            <input type="checkbox" name="variants[${variantIndex}][is_discount_active]" value="1" class="form-check-input" id="variant_discount_active_${variantIndex}">
+                            <label class="form-check-label" for="variant_discount_active_${variantIndex}">Activate Variant Discount</label>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
         container.appendChild(newVariant);

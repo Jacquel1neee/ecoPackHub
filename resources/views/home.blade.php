@@ -57,16 +57,20 @@
                                             @endphp
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <div>
-                                                    @if($product->has_active_discount)
-                                                        <small class="text-muted text-decoration-line-through">RM {{ number_format($basePrice, 2) }}</small><br>
-                                                        <span class="fw-bold" style="color: #e65100; font-size: 0.9rem;">RM {{ number_format($promoPrice, 2) }}</span>
+                                                    @if($product->show_price_on_homepage)
+                                                        @if($product->has_active_discount)
+                                                            <small class="text-muted text-decoration-line-through">RM {{ number_format($basePrice, 2) }}</small><br>
+                                                            <span class="fw-bold" style="color: #e65100; font-size: 0.9rem;">RM {{ number_format($promoPrice, 2) }}</span>
+                                                        @else
+                                                            <span class="fw-bold" style="color: #e65100; font-size: 0.9rem;">RM {{ number_format($basePrice, 2) }}</span>
+                                                        @endif
                                                     @else
-                                                        <span class="fw-bold" style="color: #e65100; font-size: 0.9rem;">RM {{ number_format($basePrice, 2) }}</span>
+                                                        <span class="fw-semibold text-muted" style="font-size: 0.8rem;">Price hidden</span>
                                                     @endif
                                                 </div>
                                                 @if($product->has_active_discount)
-                                                    @if($product->discount_percentage !== null)
-                                                        <small class="badge bg-danger" style="font-size: 0.6rem;">-{{ number_format((float) $product->discount_percentage, 0) }}%</small>
+                                                    @if($product->max_discount_percentage !== null)
+                                                        <small class="badge bg-danger" style="font-size: 0.6rem;">-{{ number_format((float) $product->max_discount_percentage, 0) }}%</small>
                                                     @else
                                                         <small class="badge bg-danger" style="font-size: 0.6rem;">Promo</small>
                                                     @endif
@@ -353,40 +357,25 @@
                                         
                                         <div class="mt-auto">
                                             <div class="d-flex justify-content-between align-items-center">
-                                                <span class="fw-bold" style="color: var(--primary-green); font-size: 1rem;">
-                                                    @if($product->has_active_discount)
-                                                        <small class="text-muted fw-normal text-decoration-line-through" style="font-size: 0.7rem;">RM {{ number_format($product->min_price, 2) }}@if($product->min_price != $product->max_price) - RM {{ number_format($product->max_price, 2) }}@endif</small>
-                                                        <br>
-                                                        RM {{ number_format($product->discounted_min_price, 2) }}
-                                                        @if($product->discounted_min_price != $product->discounted_max_price)
-                                                            <small class="text-muted fw-normal" style="font-size: 0.7rem;">- RM {{ number_format($product->discounted_max_price, 2) }}</small>
-                                                        @endif
-                                                    @else
-                                                        RM {{ number_format($product->min_price, 2) }}
-                                                        @if($product->min_price != $product->max_price)
-                                                            <small class="text-muted fw-normal" style="font-size: 0.7rem;">- RM {{ number_format($product->max_price, 2) }}</small>
-                                                        @endif
-                                                    @endif
-                                                </span>
-                                                    @if($product->show_price_on_homepage)
-                                                        <span class="fw-bold" style="color: var(--primary-green); font-size: 1rem;">
-                                                            @if($product->has_active_discount)
-                                                                <small class="text-muted fw-normal text-decoration-line-through" style="font-size: 0.7rem;">RM {{ number_format($product->min_price, 2) }}@if($product->min_price != $product->max_price) - RM {{ number_format($product->max_price, 2) }}@endif</small>
-                                                                <br>
-                                                                RM {{ number_format($product->discounted_min_price, 2) }}
-                                                                @if($product->discounted_min_price != $product->discounted_max_price)
-                                                                    <small class="text-muted fw-normal" style="font-size: 0.7rem;">- RM {{ number_format($product->discounted_max_price, 2) }}</small>
-                                                                @endif
-                                                            @else
-                                                                RM {{ number_format($product->min_price, 2) }}
-                                                                @if($product->min_price != $product->max_price)
-                                                                    <small class="text-muted fw-normal" style="font-size: 0.7rem;">- RM {{ number_format($product->max_price, 2) }}</small>
-                                                                @endif
+                                                @if($product->show_price_on_homepage)
+                                                    <span class="fw-bold" style="color: var(--primary-green); font-size: 1rem;">
+                                                        @if($product->has_active_discount)
+                                                            <small class="text-muted fw-normal text-decoration-line-through" style="font-size: 0.7rem;">RM {{ number_format($product->min_price, 2) }}@if($product->min_price != $product->max_price) - RM {{ number_format($product->max_price, 2) }}@endif</small>
+                                                            <br>
+                                                            RM {{ number_format($product->discounted_min_price, 2) }}
+                                                            @if($product->discounted_min_price != $product->discounted_max_price)
+                                                                <small class="text-muted fw-normal" style="font-size: 0.7rem;">- RM {{ number_format($product->discounted_max_price, 2) }}</small>
                                                             @endif
-                                                        </span>
-                                                    @else
-                                                        <span class="fw-semibold text-muted" style="font-size: 0.85rem;">Price hidden</span>
-                                                    @endif
+                                                        @else
+                                                            RM {{ number_format($product->min_price, 2) }}
+                                                            @if($product->min_price != $product->max_price)
+                                                                <small class="text-muted fw-normal" style="font-size: 0.7rem;">- RM {{ number_format($product->max_price, 2) }}</small>
+                                                            @endif
+                                                        @endif
+                                                    </span>
+                                                @else
+                                                    <span class="fw-semibold text-muted" style="font-size: 0.85rem;">Price hidden</span>
+                                                @endif
                                                 <small class="text-muted" style="font-size: 0.6rem;">{{ $product->variants->first()->packing_quantity ?? '' }}</small>
                                             </div>
                                             
@@ -471,26 +460,18 @@
                                                 <h6 class="card-title fw-semibold mb-0 text-truncate" style="font-size: 0.8rem;">{{ $product->name }}</h6>
                                             </a>
                                             <div class="d-flex justify-content-between align-items-center mt-1">
-                                                <span class="fw-bold" style="color: var(--primary-green); font-size: 0.85rem;">
-                                                    @if($product->has_active_discount)
-                                                        <small class="text-muted text-decoration-line-through me-1">RM {{ number_format($product->min_price, 2) }}</small>
-                                                        RM {{ number_format($product->discounted_min_price, 2) }}
-                                                    @else
-                                                        RM {{ number_format($product->min_price, 2) }}
-                                                    @endif
-                                                </span>
-                                                    @if($product->show_price_on_homepage)
-                                                        <span class="fw-bold" style="color: var(--primary-green); font-size: 0.85rem;">
-                                                            @if($product->has_active_discount)
-                                                                <small class="text-muted text-decoration-line-through me-1">RM {{ number_format($product->min_price, 2) }}</small>
-                                                                RM {{ number_format($product->discounted_min_price, 2) }}
-                                                            @else
-                                                                RM {{ number_format($product->min_price, 2) }}
-                                                            @endif
-                                                        </span>
-                                                    @else
-                                                        <span class="fw-semibold text-muted" style="font-size: 0.75rem;">Price hidden</span>
-                                                    @endif
+                                                @if($product->show_price_on_homepage)
+                                                    <span class="fw-bold" style="color: var(--primary-green); font-size: 0.85rem;">
+                                                        @if($product->has_active_discount)
+                                                            <small class="text-muted text-decoration-line-through me-1">RM {{ number_format($product->min_price, 2) }}</small>
+                                                            RM {{ number_format($product->discounted_min_price, 2) }}
+                                                        @else
+                                                            RM {{ number_format($product->min_price, 2) }}
+                                                        @endif
+                                                    </span>
+                                                @else
+                                                    <span class="fw-semibold text-muted" style="font-size: 0.75rem;">Price hidden</span>
+                                                @endif
                                                 <small class="text-muted" style="font-size: 0.6rem;">{{ $product->variants->count() }} variants</small>
                                             </div>
                                         </div>
