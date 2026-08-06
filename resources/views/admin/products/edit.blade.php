@@ -181,12 +181,38 @@
                         @endphp
                         <div class="col-md-1">
                             <label class="form-label small">Size</label>
-                            <input type="text" name="variants[{{ $index }}][size]" class="form-control" 
-                                   placeholder="e.g., 600ml, 9inch" value="{{ old('variants.'.$index.'.size', $variant->size) }}">
+                            @php
+                                $currentSize = old('variants.'.$index.'.size', $variant->size);
+                                $vendorSizeOptions = [];
+                                if ($selectedVendorId) {
+                                    foreach ($product->variants as $candidate) {
+                                        if ((int) $candidate->vendor_id === (int) $selectedVendorId && !empty($candidate->size)) {
+                                            $vendorSizeOptions[] = $candidate->size;
+                                        }
+                                    }
+                                }
+                                if ($currentSize && !in_array($currentSize, $vendorSizeOptions, true)) {
+                                    $vendorSizeOptions[] = $currentSize;
+                                }
+                                $vendorSizeOptions = array_values(array_unique(array_filter($vendorSizeOptions)));
+                            @endphp
+                            <select name="variants[{{ $index }}][size]" class="form-select variant-size-select">
+                                <option value="">Select Size</option>
+                                @foreach($vendorSizeOptions as $sizeOption)
+                                    <option value="{{ $sizeOption }}" {{ $currentSize === $sizeOption ? 'selected' : '' }}>{{ $sizeOption }}</option>
+                                @endforeach
+                            </select>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label small">Quantifier (Vendor Qty + Option)</label>
-                            <input type="text" class="form-control variant-quantifier-display" value="{{ $currentQuantifierDisplay }}" placeholder="Set in Vendor page" readonly>
+                            <select class="form-select variant-quantifier-select">
+                                <option value="">Select Quantifier</option>
+                                @if($currentQuantifierDisplay !== '')
+                                    <option value="{{ ($currentOptionId ?: '') . '|' . ($currentVendorQuantity !== '' && $currentVendorQuantity !== null ? (int) $currentVendorQuantity : '') . '|' . $currentOptionName }}" data-option-id="{{ $currentOptionId ?: '' }}" data-option-name="{{ $currentOptionName }}" data-quantity="{{ $currentVendorQuantity !== '' && $currentVendorQuantity !== null ? (int) $currentVendorQuantity : '' }}" selected>
+                                        {{ $currentQuantifierDisplay }}
+                                    </option>
+                                @endif
+                            </select>
                             <input type="hidden" name="variants[{{ $index }}][packing_quantity_option_id]" class="variant-packing-option-id" value="{{ $currentOptionId }}">
                             <input type="hidden" name="variants[{{ $index }}][packing_quantity]" class="variant-packing-quantity-value" value="{{ old('variants.'.$index.'.packing_quantity', $currentOptionName ?: ($variant->packingQuantityDisplay ?: $currentOptionName)) }}">
                             <input type="hidden" name="variants[{{ $index }}][vendor_quantity]" class="variant-vendor-quantity" value="{{ old('variants.'.$index.'.vendor_quantity', $currentVendorQuantity !== '' ? (int) $currentVendorQuantity : '') }}">
@@ -248,8 +274,46 @@
                                                 $vendorQuantity = (int) ($variant->stock ?? 0);
                                             }
                                             $vendorOptionName = $vendorOptionId ? ($packingQuantityOptions->firstWhere('id', $vendorOptionId)?->name ?? '') : '';
+
+                                            $vendorQuantifierOptions = [];
+                                            if ($vendorOptionId || $vendorOptionName || $vendorQuantity !== '' || $vendorQuantity === 0) {
+                                                $vendorQuantifierOptions[] = [
+                                                    'option_id' => $vendorOptionId ? (int) $vendorOptionId : null,
+                                                    'option_name' => $vendorOptionName,
+                                                    'quantity' => $vendorQuantity !== '' && $vendorQuantity !== null ? (int) $vendorQuantity : null,
+                                                ];
+                                            }
+
+                                            foreach ($product->variants as $candidate) {
+                                                if ((int) $candidate->vendor_id !== (int) $vendor->id) {
+                                                    continue;
+                                                }
+
+                                                $candidateOptionId = $candidate->packing_quantity_option_id;
+                                                $candidateOptionName = $candidateOptionId
+                                                    ? ($packingQuantityOptions->firstWhere('id', $candidateOptionId)?->name ?? '')
+                                                    : ($candidate->packingQuantityDisplay ?? '');
+                                                $candidateQty = $candidate->vendor_quantity;
+                                                if (($candidateQty === null || $candidateQty === '') && preg_match('/\d+/', (string) $candidate->packing_quantity, $qtyMatch)) {
+                                                    $candidateQty = (int) $qtyMatch[0];
+                                                }
+
+                                                if ($candidateOptionId || $candidateOptionName || $candidateQty !== null) {
+                                                    $vendorQuantifierOptions[] = [
+                                                        'option_id' => $candidateOptionId ? (int) $candidateOptionId : null,
+                                                        'option_name' => $candidateOptionName,
+                                                        'quantity' => $candidateQty !== null && $candidateQty !== '' ? (int) $candidateQty : null,
+                                                    ];
+                                                }
+                                            }
+
+                                            $vendorSizeOptions = $product->variants
+                                                ->filter(fn ($candidate) => (int) $candidate->vendor_id === (int) $vendor->id && !empty($candidate->size))
+                                                ->pluck('size')
+                                                ->unique()
+                                                ->values();
                                         @endphp
-                                        <option value="{{ $vendor->id }}" data-price="{{ $vendorPrice }}" data-quantity="{{ $vendorQuantity }}" data-option-id="{{ $vendorOptionId }}" data-option-name="{{ $vendorOptionName }}" {{ $selectedVendorId == $vendor->id ? 'selected' : '' }}>
+                                        <option value="{{ $vendor->id }}" data-price="{{ $vendorPrice }}" data-quantity="{{ $vendorQuantity }}" data-option-id="{{ $vendorOptionId }}" data-option-name="{{ $vendorOptionName }}" data-option-map='@json($vendorQuantifierOptions)' data-size-map='@json($vendorSizeOptions)' {{ $selectedVendorId == $vendor->id ? 'selected' : '' }}>
                                             {{ $vendor->name }}
                                         </option>
                                     @endforeach
@@ -313,10 +377,145 @@
         const priceInput = variantItem.querySelector('input[name*="[price]"]');
         const vendorPriceInput = variantItem.querySelector('.variant-vendor-price');
         const vendorPriceDisplay = variantItem.querySelector('.variant-vendor-price-display');
-        const quantifierDisplay = variantItem.querySelector('.variant-quantifier-display');
+        const quantifierSelect = variantItem.querySelector('.variant-quantifier-select');
+        const sizeSelect = variantItem.querySelector('.variant-size-select');
         const packingOptionIdInput = variantItem.querySelector('.variant-packing-option-id');
         const packingValueInput = variantItem.querySelector('.variant-packing-quantity-value');
         const vendorQuantityInput = variantItem.querySelector('.variant-vendor-quantity');
+
+        const syncSizeChoices = () => {
+            if (!vendorSelect || !sizeSelect) {
+                return;
+            }
+
+            const selectedVendor = vendorSelect.options[vendorSelect.selectedIndex];
+            let sizeOptions = [];
+            try {
+                sizeOptions = JSON.parse(selectedVendor?.dataset.sizeMap || '[]');
+            } catch (error) {
+                sizeOptions = [];
+            }
+
+            const currentSize = sizeSelect.value;
+            const uniqueSizes = Array.from(new Set((sizeOptions || []).filter(Boolean)));
+            if (currentSize && !uniqueSizes.includes(currentSize)) {
+                uniqueSizes.unshift(currentSize);
+            }
+
+            sizeSelect.innerHTML = '<option value="">Select Size</option>';
+            uniqueSizes.forEach((size) => {
+                const option = document.createElement('option');
+                option.value = size;
+                option.textContent = size;
+                sizeSelect.appendChild(option);
+            });
+
+            if (currentSize && uniqueSizes.includes(currentSize)) {
+                sizeSelect.value = currentSize;
+            } else if (uniqueSizes.length > 0) {
+                sizeSelect.selectedIndex = 1;
+            }
+        };
+
+        const parseVendorQuantifierOptions = (vendorOption) => {
+            if (!vendorOption) {
+                return [];
+            }
+
+            let mapped = [];
+            try {
+                mapped = JSON.parse(vendorOption.dataset.optionMap || '[]');
+            } catch (error) {
+                mapped = [];
+            }
+
+            const fallbackQty = vendorOption.dataset.quantity || '';
+            const fallbackOptionId = vendorOption.dataset.optionId || '';
+            const fallbackOptionName = vendorOption.dataset.optionName || '';
+
+            if (mapped.length === 0 && (fallbackOptionId || fallbackOptionName || fallbackQty !== '')) {
+                mapped.push({
+                    option_id: fallbackOptionId !== '' ? Number(fallbackOptionId) : null,
+                    option_name: fallbackOptionName,
+                    quantity: fallbackQty !== '' ? Number(fallbackQty) : null,
+                });
+            }
+
+            return mapped;
+        };
+
+        const applyQuantifierSelection = () => {
+            if (!quantifierSelect || !packingValueInput || !packingOptionIdInput || !vendorQuantityInput) {
+                return;
+            }
+
+            const selected = quantifierSelect.options[quantifierSelect.selectedIndex];
+            const optionId = selected?.dataset.optionId || '';
+            const optionName = selected?.dataset.optionName || '';
+            const quantity = selected?.dataset.quantity || '';
+
+            packingOptionIdInput.value = optionId;
+            packingValueInput.value = optionName;
+            vendorQuantityInput.value = quantity !== '' ? String(parseInt(quantity, 10)) : '';
+        };
+
+        const syncQuantifierChoices = () => {
+            if (!vendorSelect || !quantifierSelect) {
+                return;
+            }
+
+            const vendorOption = vendorSelect.options[vendorSelect.selectedIndex];
+            const quantifierOptions = parseVendorQuantifierOptions(vendorOption);
+            const currentOptionId = packingOptionIdInput?.value || '';
+            const currentOptionName = packingValueInput?.value || '';
+            const currentVendorQty = vendorQuantityInput?.value || '';
+
+            const unique = new Map();
+            quantifierOptions.forEach((item) => {
+                const optionId = item.option_id ?? '';
+                const optionName = item.option_name ?? '';
+                const quantity = item.quantity ?? '';
+                const key = `${optionId}|${quantity}|${optionName}`;
+                if (!unique.has(key)) {
+                    unique.set(key, { optionId, optionName, quantity });
+                }
+            });
+
+            if (currentOptionId || currentOptionName || currentVendorQty !== '') {
+                const currentKey = `${currentOptionId}|${currentVendorQty}|${currentOptionName}`;
+                if (!unique.has(currentKey)) {
+                    unique.set(currentKey, {
+                        optionId: currentOptionId,
+                        optionName: currentOptionName,
+                        quantity: currentVendorQty,
+                    });
+                }
+            }
+
+            quantifierSelect.innerHTML = '<option value="">Select Quantifier</option>';
+
+            unique.forEach((item, key) => {
+                const optionElement = document.createElement('option');
+                optionElement.value = key;
+                optionElement.dataset.optionId = item.optionId;
+                optionElement.dataset.optionName = item.optionName;
+                optionElement.dataset.quantity = item.quantity;
+
+                const qtyText = item.quantity !== '' && item.quantity !== null ? String(parseInt(item.quantity, 10)) : '';
+                optionElement.textContent = [qtyText, item.optionName].filter(Boolean).join(' ').trim() || 'Custom';
+                quantifierSelect.appendChild(optionElement);
+            });
+
+            const preferredKey = `${currentOptionId}|${currentVendorQty}|${currentOptionName}`;
+            const hasPreferred = Array.from(quantifierSelect.options).some((option) => option.value === preferredKey);
+            if (preferredKey !== '||' && hasPreferred) {
+                quantifierSelect.value = preferredKey;
+            } else if (quantifierSelect.options.length > 1) {
+                quantifierSelect.selectedIndex = 1;
+            }
+
+            applyQuantifierSelection();
+        };
 
         const syncVendorPrice = () => {
             if (!vendorSelect || !vendorPriceInput || !priceInput) {
@@ -340,43 +539,14 @@
             }
         };
 
-        const syncQuantifier = () => {
-            if (!vendorSelect || !packingValueInput) {
-                return;
-            }
-
-            const option = vendorSelect.options[vendorSelect.selectedIndex];
-            const vendorQuantity = option?.dataset.quantity || vendorQuantityInput?.value || '';
-            const optionId = option?.dataset.optionId || '';
-            const optionName = option?.dataset.optionName || '';
-                const qtyPrefix = vendorQuantity !== '' ? String(parseInt(vendorQuantity, 10)) : '';
-                const quantifier = [qtyPrefix, optionName].filter(Boolean).join(' ');
-
-            if (!vendorSelect.value) {
-                return;
-            }
-
-            if (!quantifier && !optionId && !optionName && (quantifierDisplay?.value || packingValueInput.value)) {
-                return;
-            }
-
-            if (quantifierDisplay) {
-                quantifierDisplay.value = quantifier;
-            }
-            if (packingOptionIdInput) {
-                packingOptionIdInput.value = optionId;
-            }
-            if (vendorQuantityInput) {
-                vendorQuantityInput.value = vendorQuantity !== '' ? String(parseInt(vendorQuantity, 10)) : '';
-            }
-            packingValueInput.value = optionName;
-        };
-
         vendorSelect?.addEventListener('change', syncVendorPrice);
         priceInput?.addEventListener('input', syncVendorPrice);
-        vendorSelect?.addEventListener('change', syncQuantifier);
+        vendorSelect?.addEventListener('change', syncQuantifierChoices);
+        vendorSelect?.addEventListener('change', syncSizeChoices);
+        quantifierSelect?.addEventListener('change', applyQuantifierSelection);
         syncVendorPrice();
-        syncQuantifier();
+        syncQuantifierChoices();
+        syncSizeChoices();
     }
 
     // ===== Variant Management =====
@@ -391,11 +561,15 @@
         newVariant.innerHTML = `
             <div class="col-md-1">
                 <label class="form-label small">Size</label>
-                <input type="text" name="variants[${variantIndex}][size]" class="form-control" placeholder="e.g., 600ml, 9inch" value="Standard">
+                <select name="variants[${variantIndex}][size]" class="form-select variant-size-select">
+                    <option value="">Select Size</option>
+                </select>
             </div>
             <div class="col-md-3">
                 <label class="form-label small">Quantifier (Vendor Qty + Option)</label>
-                <input type="text" class="form-control variant-quantifier-display" value="" placeholder="Set in Vendor page" readonly>
+                <select class="form-select variant-quantifier-select">
+                    <option value="">Select Quantifier</option>
+                </select>
                 <input type="hidden" name="variants[${variantIndex}][packing_quantity_option_id]" class="variant-packing-option-id" value="">
                 <input type="hidden" name="variants[${variantIndex}][packing_quantity]" class="variant-packing-quantity-value" value="">
                 <input type="hidden" name="variants[${variantIndex}][vendor_quantity]" class="variant-vendor-quantity" value="">
@@ -417,8 +591,42 @@
                                 $vendorQuantity = $vendor->pivot->quantity ?? '';
                                 $vendorOptionId = $vendor->pivot->packing_quantity_option_id ?? '';
                                 $vendorOptionName = $vendorOptionId ? ($packingQuantityOptions->firstWhere('id', $vendorOptionId)?->name ?? '') : '';
+                                $vendorQuantifierOptions = [];
+                                if ($vendorOptionId || $vendorOptionName || $vendorQuantity !== '') {
+                                    $vendorQuantifierOptions[] = [
+                                        'option_id' => $vendorOptionId ? (int) $vendorOptionId : null,
+                                        'option_name' => $vendorOptionName,
+                                        'quantity' => $vendorQuantity !== '' && $vendorQuantity !== null ? (int) $vendorQuantity : null,
+                                    ];
+                                }
+                                foreach ($product->variants as $candidate) {
+                                    if ((int) $candidate->vendor_id !== (int) $vendor->id) {
+                                        continue;
+                                    }
+                                    $candidateOptionId = $candidate->packing_quantity_option_id;
+                                    $candidateOptionName = $candidateOptionId
+                                        ? ($packingQuantityOptions->firstWhere('id', $candidateOptionId)?->name ?? '')
+                                        : ($candidate->packingQuantityDisplay ?? '');
+                                    $candidateQty = $candidate->vendor_quantity;
+                                    if (($candidateQty === null || $candidateQty === '') && preg_match('/\d+/', (string) $candidate->packing_quantity, $qtyMatch)) {
+                                        $candidateQty = (int) $qtyMatch[0];
+                                    }
+                                    if ($candidateOptionId || $candidateOptionName || $candidateQty !== null) {
+                                        $vendorQuantifierOptions[] = [
+                                            'option_id' => $candidateOptionId ? (int) $candidateOptionId : null,
+                                            'option_name' => $candidateOptionName,
+                                            'quantity' => $candidateQty !== null && $candidateQty !== '' ? (int) $candidateQty : null,
+                                        ];
+                                    }
+                                }
+
+                                $vendorSizeOptions = $product->variants
+                                    ->filter(fn ($candidate) => (int) $candidate->vendor_id === (int) $vendor->id && !empty($candidate->size))
+                                    ->pluck('size')
+                                    ->unique()
+                                    ->values();
                             @endphp
-                            <option value="{{ $vendor->id }}" data-price="{{ $vendorPrice }}" data-quantity="{{ $vendorQuantity }}" data-option-id="{{ $vendorOptionId }}" data-option-name="{{ $vendorOptionName }}">{{ $vendor->name }}</option>
+                            <option value="{{ $vendor->id }}" data-price="{{ $vendorPrice }}" data-quantity="{{ $vendorQuantity }}" data-option-id="{{ $vendorOptionId }}" data-option-name="{{ $vendorOptionName }}" data-option-map='@json($vendorQuantifierOptions)' data-size-map='@json($vendorSizeOptions)'>{{ $vendor->name }}</option>
                         @endforeach
                     @endif
                 </select>

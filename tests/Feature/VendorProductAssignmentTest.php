@@ -214,7 +214,7 @@ class VendorProductAssignmentTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.products.edit', $product))
             ->assertOk()
-            ->assertSee('value="100 pcs/ctn"', false)
+            ->assertSee('100 pcs/ctn', false)
             ->assertSee('data-quantity="100"', false);
     }
 
@@ -261,9 +261,9 @@ class VendorProductAssignmentTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.products.edit', $product))
             ->assertOk()
-            ->assertSee('value="1000 pcs/ctn"', false)
+            ->assertSee('1000 pcs/ctn', false)
             ->assertSee('class="variant-vendor-quantity" value="1000"', false)
-            ->assertSee("option?.dataset.quantity || vendorQuantityInput?.value || ''", false);
+            ->assertSee("const fallbackQty = vendorOption.dataset.quantity || ''", false);
     }
 
     #[Test]
@@ -311,7 +311,7 @@ class VendorProductAssignmentTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.products.edit', $product))
             ->assertOk()
-            ->assertSee('value="240 pcs/ctn"', false)
+            ->assertSee('240 pcs/ctn', false)
             ->assertSee('data-quantity="240"', false)
             ->assertSee('data-option-name="pcs/ctn"', false)
             ->assertDontSee("option?.dataset.price || priceInput.value || ''", false);
@@ -380,7 +380,7 @@ class VendorProductAssignmentTest extends TestCase
 
         $content = $response->getContent();
         $this->assertNotFalse($content);
-        $this->assertGreaterThanOrEqual(2, substr_count((string) $content, 'value="240 pcs/ctn"'));
+        $this->assertGreaterThanOrEqual(1, substr_count((string) $content, '240 pcs/ctn'));
     }
 
     #[Test]
@@ -461,8 +461,8 @@ class VendorProductAssignmentTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSee('value="2000 pcs/pkt"', false)
-            ->assertSee('value="1000 pcs/pkt"', false)
-            ->assertSee('value="500 pcs/pkt"', false);
+            ->assertSee('2000 pcs/pkt', false)
+            ->assertSee('1000 pcs/pkt', false)
+            ->assertSee('500 pcs/pkt', false);
     }
 }

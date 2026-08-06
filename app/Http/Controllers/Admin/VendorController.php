@@ -40,6 +40,8 @@ class VendorController extends Controller
             'products.*.price' => 'nullable|numeric|min:0',
             'variants' => 'nullable|array',
             'variants.*.selected' => 'nullable|boolean',
+            'variants.*.product_id' => 'nullable|integer|exists:products,id',
+            'variants.*.size' => 'nullable|string|max:255',
             'variants.*.quantity' => 'nullable|integer|min:0',
             'variants.*.packing_quantity_option_id' => 'nullable|exists:packing_quantity_options,id',
             'variants.*.price' => 'nullable|numeric|min:0',
@@ -84,6 +86,8 @@ class VendorController extends Controller
             'products.*.price' => 'nullable|numeric|min:0',
             'variants' => 'nullable|array',
             'variants.*.selected' => 'nullable|boolean',
+            'variants.*.product_id' => 'nullable|integer|exists:products,id',
+            'variants.*.size' => 'nullable|string|max:255',
             'variants.*.quantity' => 'nullable|integer|min:0',
             'variants.*.packing_quantity_option_id' => 'nullable|exists:packing_quantity_options,id',
             'variants.*.price' => 'nullable|numeric|min:0',
@@ -138,16 +142,19 @@ class VendorController extends Controller
 
     private function syncVendorVariants(Vendor $vendor, array $variantRows): void
     {
-        $variantIds = collect(array_keys($variantRows))
+        $existingVariantRows = collect($variantRows)
+            ->filter(fn ($row, $variantId) => is_numeric($variantId) && (int) $variantId > 0)
+            ->all();
+
+        $newVariantRows = collect($variantRows)
+            ->filter(fn ($row, $variantId) => ! (is_numeric($variantId) && (int) $variantId > 0))
+            ->all();
+
+        $variantIds = collect(array_keys($existingVariantRows))
             ->map(fn ($id) => (int) $id)
             ->filter(fn ($id) => $id > 0)
             ->unique()
             ->values();
-
-        if ($variantIds->isEmpty()) {
-            $vendor->products()->sync([]);
-            return;
-        }
 
         $variantsById = ProductVariant::query()
             ->whereIn('id', $variantIds)
@@ -168,7 +175,7 @@ class VendorController extends Controller
 
         $selectedByProduct = [];
 
-        foreach ($variantRows as $variantId => $row) {
+        foreach ($existingVariantRows as $variantId => $row) {
             /** @var ProductVariant|null $variant */
             $variant = $variantsById->get((int) $variantId);
             if (! $variant) {
@@ -215,6 +222,57 @@ class VendorController extends Controller
                 'quantity' => $quantity,
                 'packing_quantity_option_id' => $optionId,
             ];
+        }
+
+        foreach ($newVariantRows as $row) {
+            $hasAnyValue = (isset($row['quantity']) && $row['quantity'] !== '')
+                || (isset($row['packing_quantity_option_id']) && $row['packing_quantity_option_id'] !== '')
+                || (isset($row['price']) && $row['price'] !== '')
+                || (isset($row['size']) && trim((string) $row['size']) !== '');
+
+            $isSelected = filter_var($row['selected'] ?? false, FILTER_VALIDATE_BOOLEAN) || $hasAnyValue;
+            if (! $isSelected) {
+                continue;
+            }
+
+            $productId = isset($row['product_id']) ? (int) $row['product_id'] : 0;
+            $size = trim((string) ($row['size'] ?? ''));
+
+            if ($productId <= 0 || $size === '') {
+                continue;
+            }
+
+            if (! array_key_exists('price', $row) || $row['price'] === '' || $row['price'] === null) {
+                continue;
+            }
+
+            $optionId = $row['packing_quantity_option_id'] ?? null;
+            $optionId = ($optionId === '' || $optionId === null) ? null : (int) $optionId;
+            $option = $optionId ? $optionsById->get($optionId) : null;
+            $quantity = isset($row['quantity']) && $row['quantity'] !== '' ? (int) $row['quantity'] : null;
+
+            ProductVariant::create([
+                'product_id' => $productId,
+                'vendor_id' => $vendor->id,
+                'size' => $size,
+                'packing_quantity' => $option?->name ?? 'Standard',
+                'packing_quantity_option_id' => $optionId,
+                'price' => (float) $row['price'],
+                'vendor_price' => (float) $row['price'],
+                'vendor_quantity' => $quantity,
+                'stock' => 0,
+            ]);
+
+            $selectedByProduct[$productId][] = [
+                'price' => (float) $row['price'],
+                'quantity' => $quantity,
+                'packing_quantity_option_id' => $optionId,
+            ];
+        }
+
+        if (empty($selectedByProduct)) {
+            $vendor->products()->sync([]);
+            return;
         }
 
         $syncData = [];

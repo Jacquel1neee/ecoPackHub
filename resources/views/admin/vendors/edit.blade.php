@@ -78,6 +78,9 @@
 
                     $assignedVariantIds = $assignedVariantMap->keys()->map(fn ($id) => (int) $id)->values();
                     $oldVariantRows = old('variants', []);
+                    $oldCustomVariantRows = collect($oldVariantRows)
+                        ->filter(fn ($row, $key) => !is_numeric($key))
+                        ->values();
 
                     $allVariantsById = $products
                         ->flatMap(fn ($product) => $product->variants)
@@ -287,6 +290,61 @@
                     </div>
                 </div>
 
+                <div class="card border-success mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="mb-1 fw-bold" style="color: var(--primary-green);">Add Product Variant Size (Vendor Provided)</h6>
+                                <p class="text-muted small mb-0">Add a new variant size for a product under this vendor, then admin can select it in product edit.</p>
+                            </div>
+                            <button type="button" class="btn btn-outline-success btn-sm" id="addCustomVariantBtn">
+                                <i class="fas fa-plus me-1"></i>Add Variant Size
+                            </button>
+                        </div>
+
+                        <div id="customVariantRows" class="d-grid gap-2" data-initial-count="{{ $oldCustomVariantRows->count() }}">
+                            @foreach($oldCustomVariantRows as $customIndex => $customRow)
+                                <div class="row g-2 custom-variant-row align-items-end border rounded p-2">
+                                    <div class="col-md-3">
+                                        <label class="form-label small mb-1">Product</label>
+                                        <select name="variants[new_custom_{{ $customIndex }}][product_id]" class="form-select form-select-sm">
+                                            <option value="">Select Product</option>
+                                            @foreach($products as $product)
+                                                <option value="{{ $product->id }}" {{ (int) ($customRow['product_id'] ?? 0) === (int) $product->id ? 'selected' : '' }}>{{ $product->name }} ({{ $product->code }})</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small mb-1">Variant Size</label>
+                                        <input type="text" name="variants[new_custom_{{ $customIndex }}][size]" class="form-control form-control-sm" value="{{ $customRow['size'] ?? '' }}" placeholder="e.g. 12oz / Large">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small mb-1">Quantity</label>
+                                        <input type="number" min="0" step="1" name="variants[new_custom_{{ $customIndex }}][quantity]" class="form-control form-control-sm" value="{{ $customRow['quantity'] ?? '' }}" placeholder="100">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small mb-1">Variant Option</label>
+                                        <select name="variants[new_custom_{{ $customIndex }}][packing_quantity_option_id]" class="form-select form-select-sm">
+                                            <option value="">Select Option</option>
+                                            @foreach($packingQuantityOptions as $option)
+                                                <option value="{{ $option->id }}" {{ (string) ($customRow['packing_quantity_option_id'] ?? '') === (string) $option->id ? 'selected' : '' }}>{{ $option->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small mb-1">Vendor Price (RM)</label>
+                                        <input type="number" min="0" step="0.01" name="variants[new_custom_{{ $customIndex }}][price]" class="form-control form-control-sm" value="{{ $customRow['price'] ?? '' }}" placeholder="0.00">
+                                    </div>
+                                    <div class="col-md-1">
+                                        <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-custom-variant-btn"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                    <input type="hidden" name="variants[new_custom_{{ $customIndex }}][selected]" value="1">
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
                 <button type="submit" class="btn" style="background-color: var(--primary-green); color: #fff;">
                     <i class="fas fa-save me-2"></i>Update Vendor
                 </button>
@@ -300,6 +358,23 @@
     const addProductToggleBtn = document.getElementById('addProductToggleBtn');
     const addSelectedProductBtn = document.getElementById('addSelectedProductBtn');
     const productPicker = document.getElementById('productPicker');
+    const customVariantRows = document.getElementById('customVariantRows');
+    const addCustomVariantBtn = document.getElementById('addCustomVariantBtn');
+    let customVariantIndex = parseInt(customVariantRows?.dataset.initialCount || '0', 10);
+
+    const customVariantProductOptions = `
+        <option value="">Select Product</option>
+        @foreach($products as $product)
+            <option value="{{ $product->id }}">{{ $product->name }} ({{ $product->code }})</option>
+        @endforeach
+    `;
+
+    const customVariantOptionOptions = `
+        <option value="">Select Option</option>
+        @foreach($packingQuantityOptions as $option)
+            <option value="{{ $option->id }}">{{ $option->name }}</option>
+        @endforeach
+    `;
 
     const toggleVariantInputs = (variantId, enabled) => {
         document.querySelectorAll(`.variant-field[data-variant-id="${variantId}"]`).forEach((field) => {
@@ -403,6 +478,52 @@
     if (Array.from(document.querySelectorAll('.product-add-card')).some((card) => !card.classList.contains('d-none'))) {
         addProductPanel?.classList.remove('d-none');
     }
+
+    addCustomVariantBtn?.addEventListener('click', () => {
+        const row = document.createElement('div');
+        row.className = 'row g-2 custom-variant-row align-items-end border rounded p-2';
+        row.innerHTML = `
+            <div class="col-md-3">
+                <label class="form-label small mb-1">Product</label>
+                <select name="variants[new_custom_${customVariantIndex}][product_id]" class="form-select form-select-sm">
+                    ${customVariantProductOptions}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1">Variant Size</label>
+                <input type="text" name="variants[new_custom_${customVariantIndex}][size]" class="form-control form-control-sm" placeholder="e.g. 12oz / Large">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1">Quantity</label>
+                <input type="number" min="0" step="1" name="variants[new_custom_${customVariantIndex}][quantity]" class="form-control form-control-sm" placeholder="100">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1">Variant Option</label>
+                <select name="variants[new_custom_${customVariantIndex}][packing_quantity_option_id]" class="form-select form-select-sm">
+                    ${customVariantOptionOptions}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1">Vendor Price (RM)</label>
+                <input type="number" min="0" step="0.01" name="variants[new_custom_${customVariantIndex}][price]" class="form-control form-control-sm" placeholder="0.00">
+            </div>
+            <div class="col-md-1">
+                <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-custom-variant-btn"><i class="fas fa-trash"></i></button>
+            </div>
+            <input type="hidden" name="variants[new_custom_${customVariantIndex}][selected]" value="1">
+        `;
+        customVariantRows?.appendChild(row);
+        customVariantIndex++;
+    });
+
+    document.addEventListener('click', (event) => {
+        const removeButton = event.target.closest('.remove-custom-variant-btn');
+        if (!removeButton) {
+            return;
+        }
+
+        removeButton.closest('.custom-variant-row')?.remove();
+    });
 
     bindVariantEvents();
 </script>
